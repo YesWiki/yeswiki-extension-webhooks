@@ -1,22 +1,23 @@
 <hr>
-<strong>Webhooks</strong>
-<p class="text-info">Les URLs que vous définissez ci-dessous seront appelés à chaque ajout / modification / effacement de fiche BazaR.</p>
+<strong><?=_t('WEBHOOKS_CONFIG_TITLE')?></strong>
+<p class="text-info"><?=_t('WEBHOOKS_CONFIG_DESC')?></p>
 
 <form action="<?php echo $url ?>" method="POST" class="form-horizontal">
     <div class="form-group">
         <? for($i = 0; $i<=count($webhooks); $i++): ?>
         <div class="col-sm-2">
             <select class="form-control" name="format[]">
-                <option value="raw" <? echo($webhooks[$i] && $webhooks[$i]['format']==='raw' ? "selected" : ""); ?>>Données brut</option>
-                <option value="mattermost" <? echo($webhooks[$i] && $webhooks[$i]['format']==='mattermost' ? "selected" : ""); ?>>Mattermost</option>
+                <? foreach( $formats as $key => $label ): ?>
+                <option value="<?=$key?>" <? echo($webhooks[$i] && $webhooks[$i]['format']===$key ? "selected" : ""); ?>><?=_t($label)?></option>
+                <? endforeach; ?>
             </select>
         </div>
         <div class="col-sm-10">
-            <input type="text" name="url[]" value="<? echo($webhooks[$i] ? $webhooks[$i]['url'] : ""); ?>" class="form-control" placeholder="Adresse URL">
+            <input type="text" name="url[]" value="<? echo($webhooks[$i] ? $webhooks[$i]['url'] : ""); ?>" class="form-control" placeholder="<?=_t('WEBHOOKS_URL_PLACEHOLDER')?>">
         </div>
         <? endfor; ?>
     </div>
     <span class="input-group-btn">
-        <button id="btn-set-webhooks"<?php if (!$GLOBALS['wiki']->GetUser()) :?> disabled<?php endif; ?> class="btn btn-primary pull-right" type="submit">Mettre à jour</button>
+        <button id="btn-set-webhooks"<?php if (!$GLOBALS['wiki']->GetUser()) :?> disabled<?php endif; ?> class="btn btn-primary pull-right" type="submit"><?=_t('WEBHOOKS_UPDATE')?></button>
     </span>
 </form>

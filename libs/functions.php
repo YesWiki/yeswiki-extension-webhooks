@@ -23,14 +23,15 @@ function is_valid_url($url){
 function get_notification_text($data, $action_type) {
     $formulaire = baz_valeurs_formulaire($data['id_typeannonce']);
     $loggedUser = $GLOBALS['wiki']->getUser();
+    $loggedUserName = $loggedUser === '' ? _t('WEBHOOKS_ANONYMOUS_USER') : $loggedUser['name'];
 
     switch($action_type) {
         case WEBHOOKS_ACTION_ADD:
-            return "**AJOUT** Fiche \"{$data['bf_titre']}\" de type \"{$formulaire['bn_label_nature']}\" ajoutée par {$loggedUser['name']}\n{$GLOBALS['wiki']->config['base_url']}{$data['id_fiche']}";
+            return "**AJOUT** Fiche \"{$data['bf_titre']}\" de type \"{$formulaire['bn_label_nature']}\" ajoutée par {$loggedUserName}\n{$GLOBALS['wiki']->config['base_url']}{$data['id_fiche']}";
         case WEBHOOKS_ACTION_EDIT:
-            return "**MODIFICATION** Fiche \"{$data['bf_titre']}\" de type \"{$formulaire['bn_label_nature']}\" mise à jour par {$loggedUser['name']}\n{$GLOBALS['wiki']->config['base_url']}{$data['id_fiche']}";
+            return "**MODIFICATION** Fiche \"{$data['bf_titre']}\" de type \"{$formulaire['bn_label_nature']}\" mise à jour par {$loggedUserName}\n{$GLOBALS['wiki']->config['base_url']}{$data['id_fiche']}";
         case WEBHOOKS_ACTION_DELETE:
-            return "**SUPPRESSION** Fiche \"{$data['bf_titre']}\" de type \"{$formulaire['bn_label_nature']}\" supprimée par {$loggedUser['name']}";
+            return "**SUPPRESSION** Fiche \"{$data['bf_titre']}\" de type \"{$formulaire['bn_label_nature']}\" supprimée par {$loggedUserName}";
     }
 }
 
@@ -107,5 +108,6 @@ function webhooks_formulaire() {
     include_once 'includes/squelettephp.class.php';
     $templateforms = new SquelettePhp($template_name);
     $templateforms->set('webhooks', get_all_webhooks());
+    $templateforms->set('formats', $GLOBALS['wiki']->config['WEBHOOKS_FORMATS']);
     return $templateforms->analyser();
 }
