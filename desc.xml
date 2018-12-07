@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<plugin name="webhooks" version="0.1" active="1">
+  <author>Sébastien Rosset</author>
+  <label>webhooks</label>
+  <desc>Webhooks called when Bazar items are added/edited/deleted</desc>
+</plugin>
