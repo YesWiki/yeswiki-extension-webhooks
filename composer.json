@@ -1,7 +1,4 @@
 {
-    "config": {
-        "vendor-dir": "libs"
-    },
     "require": {
         "guzzlehttp/guzzle": "^6.3"
     }

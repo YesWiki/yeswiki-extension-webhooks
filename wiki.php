@@ -2,8 +2,7 @@
 
 define('WEBHOOKS_PATH', 'tools/webhooks/');
 
-//principales fonctions de bazar
-require_once WEBHOOKS_PATH.'libs/autoload.php';
+require_once WEBHOOKS_PATH.'vendor/autoload.php';
 require_once WEBHOOKS_PATH.'libs/functions.php';
 
 define('WEBHOOKS_ACTION_ADD', 'add');
@@ -31,7 +30,7 @@ $wakkaConfig['WEBHOOKS_FORMATS'] = getConfigValue('WEBHOOKS_FORMATS', [
     WEBHOOKS_FORMAT_SLACK => 'WEBHOOKS_FORMAT_SLACK',
 ], $wakkaConfig);
 
-// Bot config (works for Mattermost if username and profile picture override is enabled
+// Bot config (works for Mattermost if username and profile picture override is enabled)
 // See https://docs.mattermost.com/developer/webhooks-incoming.html
 $wakkaConfig['WEBHOOKS_BOT_NAME'] = getConfigValue('WEBHOOKS_BOT_NAME', "YesWiki Bot", $wakkaConfig);
 $wakkaConfig['WEBHOOKS_BOT_ICON'] = getConfigValue('WEBHOOKS_BOT_ICON', "https://yeswiki.net/files/PageHeader_yeswikiprovisoire_vignette_97_97_20181206153605_20181206154004.png", $wakkaConfig);
