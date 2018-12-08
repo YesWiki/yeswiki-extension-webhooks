@@ -39,7 +39,15 @@ function format_json_data($format, $data) {
     switch($format) {
         case WEBHOOKS_FORMAT_RAW:
             return $data;
+
         case WEBHOOKS_FORMAT_MATTERMOST:
+            return [
+                "username" => $GLOBALS['wiki']->config['WEBHOOKS_BOT_NAME'],
+                "icon_url" => $GLOBALS['wiki']->config['WEBHOOKS_BOT_ICON'],
+                "text" => $data['text']
+            ];
+
+        case WEBHOOKS_FORMAT_SLACK:
             return ["text" => $data['text']];
     }
 }
@@ -69,7 +77,8 @@ function webhooks_post_all($data, $action_type) {
             // Do nothing on errors...
         }
 
-        // Wait for the requests to complete, even if some of them fail
+        // Wait for the requests to complete, otherwise the code may end before the request is sent
+        // TODO: try to make it work without this command, so that webhooks can be sent asyncronously
         Promise\settle($promises)->wait();
     }
 }
