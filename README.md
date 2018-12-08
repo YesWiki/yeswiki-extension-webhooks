@@ -1,5 +1,5 @@
 # yeswiki-extension-webhooks
-Automatic webhooks at each addition/modification/deletion of a Bazar item.
+Outgoing webhooks at each addition/modification/deletion of a Bazar item.
 
 ## Installation
 
@@ -38,3 +38,5 @@ Additionnally, these information will be POSTed:
 
 - `action`: action type (add/edit/delete)
 - `text`: formatted text describing the action done
+
+If you wish to see the data returned by the webhook, you can use the URL of the test incoming webhook: http://YOUR_URL/?BazaR&vue=test-webhook. All data POSTed to this URL will be inserted into the `yeswiki_triples` table.
