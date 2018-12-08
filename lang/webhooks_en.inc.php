@@ -3,7 +3,7 @@
 $GLOBALS['translations'] = array_merge(
     $GLOBALS['translations'],
     array(
-        'WEBHOOKS_CONFIG_TITLE' => 'Webhooks',
+        'WEBHOOKS_CONFIG_TITLE' => 'Outgoing webhooks',
         'WEBHOOKS_CONFIG_DESC' => 'The URLs defined here will be called at every addition / edition / deletion of Bazar items.',
         'WEBHOOKS_FORMAT_RAW' => 'Raw',
         'WEBHOOKS_FORMAT_MATTERMOST' => 'Mattermost',

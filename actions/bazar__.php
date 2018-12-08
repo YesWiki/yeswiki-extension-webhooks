@@ -23,10 +23,10 @@ switch ($GLOBALS['params']['vue']) {
         }
         break;
 
-    case 'test-webhook':
+    case WEBHOOKS_VUE_TEST:
         $GLOBALS['wiki']->InsertTriple(
             $GLOBALS['wiki']->GetPageTag(),
-            'http://yeswiki.net/_vocabulary/test',
+            WEBHOOKS_VOCABULARY_TEST,
             file_get_contents('php://input'),
             '',
             ''

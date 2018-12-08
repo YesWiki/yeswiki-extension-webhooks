@@ -14,7 +14,10 @@ define('WEBHOOKS_FORMAT_RAW', 'raw');
 define('WEBHOOKS_FORMAT_MATTERMOST', 'mattermost');
 define('WEBHOOKS_FORMAT_SLACK', 'slack');
 
+define('WEBHOOKS_VUE_TEST', 'test-webhook');
+
 define('WEBHOOKS_VOCABULARY_WEBHOOK', "http://yeswiki.net/_vocabulary/webhook");
+define('WEBHOOKS_VOCABULARY_TEST', "http://yeswiki.net/_vocabulary/webhook-test");
 
 //////////////////
 // Configs
