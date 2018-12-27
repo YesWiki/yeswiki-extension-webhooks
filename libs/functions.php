@@ -4,11 +4,20 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Promise;
 use GuzzleHttp\Exception\ConnectException;
 
-// Read all hooks from the triples table
-function get_all_webhooks() {
-    return array_map(function($webhook) {
+function get_all_webhooks( $form_id=0 ) {
+    // Select all webhooks
+    $all_webhooks = array_map(function($webhook) {
         return json_decode($webhook['value'], true);
     }, $GLOBALS['wiki']->GetAllTriplesValues('BazaR', WEBHOOKS_VOCABULARY_WEBHOOK, '', ''));
+
+    if( $form_id === 0 ) {
+        return $all_webhooks;
+    } else {
+        // Return only webhooks which must be called for this form_id
+        return( array_filter($all_webhooks, function($webhook) use ($form_id) {
+            return( !isset($webhook['form']) || $webhook['form']===0 || $webhook['form']===$form_id );
+        }));
+    }
 }
 
 function is_valid_url($url){
@@ -20,18 +29,16 @@ function is_valid_url($url){
     }
 }
 
-function get_notification_text($data, $action_type) {
+function get_notification_text($data, $action_type, $user_name) {
     $formulaire = baz_valeurs_formulaire($data['id_typeannonce']);
-    $loggedUser = $GLOBALS['wiki']->getUser();
-    $loggedUserName = $loggedUser === '' ? _t('WEBHOOKS_ANONYMOUS_USER') : $loggedUser['name'];
 
     switch($action_type) {
         case WEBHOOKS_ACTION_ADD:
-            return "**AJOUT** Fiche \"{$data['bf_titre']}\" de type \"{$formulaire['bn_label_nature']}\" ajoutée par {$loggedUserName}\n{$GLOBALS['wiki']->config['base_url']}{$data['id_fiche']}";
+            return "**AJOUT** Fiche \"{$data['bf_titre']}\" de type \"{$formulaire['bn_label_nature']}\" ajoutée par {$user_name}\n{$GLOBALS['wiki']->config['base_url']}{$data['id_fiche']}";
         case WEBHOOKS_ACTION_EDIT:
-            return "**MODIFICATION** Fiche \"{$data['bf_titre']}\" de type \"{$formulaire['bn_label_nature']}\" mise à jour par {$loggedUserName}\n{$GLOBALS['wiki']->config['base_url']}{$data['id_fiche']}";
+            return "**MODIFICATION** Fiche \"{$data['bf_titre']}\" de type \"{$formulaire['bn_label_nature']}\" mise à jour par {$user_name}\n{$GLOBALS['wiki']->config['base_url']}{$data['id_fiche']}";
         case WEBHOOKS_ACTION_DELETE:
-            return "**SUPPRESSION** Fiche \"{$data['bf_titre']}\" de type \"{$formulaire['bn_label_nature']}\" supprimée par {$loggedUserName}";
+            return "**SUPPRESSION** Fiche \"{$data['bf_titre']}\" de type \"{$formulaire['bn_label_nature']}\" supprimée par {$user_name}";
     }
 }
 
@@ -54,19 +61,38 @@ function format_json_data($format, $data) {
 
 function webhooks_post_all($data, $action_type) {
 
-    $webhooks = get_all_webhooks();
+    if( !isset($data['id_typeannonce']) ) {
+        throw new Exception("Webhook error: unable to determine the form ID (id_typeannonce is not defined)");
+    }
+
+    $form_id = intval($data['id_typeannonce']);
+
+    $webhooks = get_all_webhooks( $form_id );
 
     if( count($webhooks) > 0 ) {
+
+        // Prepare data to send
+
+        $logged_user = $GLOBALS['wiki']->getUser();
+        $logged_user_name = $logged_user === '' ? _t('WEBHOOKS_ANONYMOUS_USER') : $logged_user['name'];
+
+        $data_to_send = [
+            'action' => $action_type,
+            'user' => $logged_user_name,
+            'text' => get_notification_text($data, $action_type, $logged_user_name),
+            'data_type' => 'bazar',
+            'bazar_form_id' => $form_id,
+            'data' => $data
+        ];
+
+        // Send data to all webhooks
 
         $client = new Client(['headers' => [
             'Connection' => 'Close'
         ]]);
 
-        $data['action'] = $action_type;
-        $data['text'] = get_notification_text($data, $action_type);
-
-        $promises = array_map(function($webhook) use ($client, $data) {
-            return $client->postAsync($webhook['url'], ['json' => format_json_data($webhook['format'], $data)]);
+        $promises = array_map(function($webhook) use ($client, $data_to_send) {
+            return $client->postAsync($webhook['url'], ['json' => format_json_data($webhook['format'], $data_to_send)]);
         }, $webhooks);
 
         try{
@@ -99,6 +125,7 @@ function webhooks_formulaire() {
                     WEBHOOKS_VOCABULARY_WEBHOOK,
                     json_encode([
                         'format' => $_POST['format'][$i],
+                        'form' => intval($_POST['form'][$i]),
                         'url' => trim($_POST['url'][$i])
                     ]),
                     '',
@@ -117,6 +144,7 @@ function webhooks_formulaire() {
     include_once 'includes/squelettephp.class.php';
     $templateforms = new SquelettePhp($template_name);
     $templateforms->set('webhooks', get_all_webhooks());
+    $templateforms->set('forms', $GLOBALS['_BAZAR_']['form']);
     $templateforms->set('formats', $GLOBALS['wiki']->config['WEBHOOKS_FORMATS']);
     return $templateforms->analyser();
 }

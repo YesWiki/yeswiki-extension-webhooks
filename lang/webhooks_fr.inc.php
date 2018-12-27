@@ -11,5 +11,6 @@ $GLOBALS['translations'] = array_merge(
         'WEBHOOKS_URL_PLACEHOLDER' => 'Adresse URL',
         'WEBHOOKS_UPDATE' => 'Mettre à jour',
         'WEBHOOKS_ANONYMOUS_USER' => 'Anonyme',
+        'WEBHOOKS_FORMS_ALL' => 'Tous les éléments du Bazar',
     )
 );

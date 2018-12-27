@@ -12,7 +12,15 @@
                 <? endforeach; ?>
             </select>
         </div>
-        <div class="col-sm-10">
+        <div class="col-sm-2">
+            <select class="form-control" name="form[]">
+                <option value="0"><?=_t('WEBHOOKS_FORMS_ALL')?></option>
+                <? foreach( $forms as $key => $form ): ?>
+                <option value="<?=$key?>" <? echo($webhooks[$i] && $key===intval($webhooks[$i]['form']) ? "selected" : ""); ?>><?=$form['bn_label_nature']?></option>
+                <? endforeach; ?>
+            </select>
+        </div>
+        <div class="col-sm-8">
             <input type="text" name="url[]" value="<? echo($webhooks[$i] ? $webhooks[$i]['url'] : ""); ?>" class="form-control" placeholder="<?=_t('WEBHOOKS_URL_PLACEHOLDER')?>">
         </div>
         <? endfor; ?>
