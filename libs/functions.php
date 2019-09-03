@@ -4,35 +4,37 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Promise;
 use GuzzleHttp\Exception\ConnectException;
 
-function get_all_webhooks( $form_id=0 ) {
+function get_all_webhooks($form_id=0)
+{
     // Select all webhooks
-    $all_webhooks = array_map(function($webhook) {
+    $all_webhooks = array_map(function ($webhook) {
         return json_decode($webhook['value'], true);
     }, $GLOBALS['wiki']->GetAllTriplesValues('BazaR', WEBHOOKS_VOCABULARY_WEBHOOK, '', ''));
 
-    if( $form_id === 0 ) {
+    if ($form_id === 0) {
         return $all_webhooks;
     } else {
         // Return only webhooks which must be called for this form_id
-        return( array_filter($all_webhooks, function($webhook) use ($form_id) {
-            return( !isset($webhook['form']) || $webhook['form']===0 || $webhook['form']===$form_id );
+        return(array_filter($all_webhooks, function ($webhook) use ($form_id) {
+            return(!isset($webhook['form']) || $webhook['form']===0 || $webhook['form']===$form_id);
         }));
     }
 }
 
-function is_valid_url($url){
-    if(preg_match( '/^(http|https):\\/\\/[a-z0-9_]+([\\-\\.]{1}[a-z_0-9]+)*(\\.[_a-z]{2,5})?'.'((:[0-9]{1,5})?\\/.*)?$/i' ,$url)){
+function is_valid_url($url)
+{
+    if (preg_match('/^(http|https):\\/\\/[a-z0-9_]+([\\-\\.]{1}[a-z_0-9]+)*(\\.[_a-z]{2,5})?'.'((:[0-9]{1,5})?\\/.*)?$/i', $url)) {
         return $url;
-    }
-    else{
+    } else {
         return false;
     }
 }
 
-function get_notification_text($data, $action_type, $user_name) {
+function get_notification_text($data, $action_type, $user_name)
+{
     $formulaire = baz_valeurs_formulaire($data['id_typeannonce']);
 
-    switch($action_type) {
+    switch ($action_type) {
         case WEBHOOKS_ACTION_ADD:
             return "**AJOUT** Fiche \"{$data['bf_titre']}\" de type \"{$formulaire['bn_label_nature']}\" ajoutée par {$user_name}\n{$GLOBALS['wiki']->config['base_url']}{$data['id_fiche']}";
         case WEBHOOKS_ACTION_EDIT:
@@ -42,8 +44,9 @@ function get_notification_text($data, $action_type, $user_name) {
     }
 }
 
-function format_json_data($format, $data) {
-    switch($format) {
+function format_json_data($format, $data)
+{
+    switch ($format) {
         case WEBHOOKS_FORMAT_RAW:
             return $data;
 
@@ -59,17 +62,17 @@ function format_json_data($format, $data) {
     }
 }
 
-function webhooks_post_all($data, $action_type) {
-
-    if( !isset($data['id_typeannonce']) ) {
+function webhooks_post_all($data, $action_type)
+{
+    if (!isset($data['id_typeannonce'])) {
         throw new Exception("Webhook error: unable to determine the form ID (id_typeannonce is not defined)");
     }
 
     $form_id = intval($data['id_typeannonce']);
 
-    $webhooks = get_all_webhooks( $form_id );
+    $webhooks = get_all_webhooks($form_id);
 
-    if( count($webhooks) > 0 ) {
+    if (count($webhooks) > 0) {
 
         // Prepare data to send
 
@@ -91,15 +94,15 @@ function webhooks_post_all($data, $action_type) {
             'Connection' => 'Close'
         ]]);
 
-        $promises = array_map(function($webhook) use ($client, $data_to_send) {
+        $promises = array_map(function ($webhook) use ($client, $data_to_send) {
             return $client->postAsync($webhook['url'], ['json' => format_json_data($webhook['format'], $data_to_send)]);
         }, $webhooks);
 
-        try{
+        try {
             // Wait on all of the requests to complete.
             // Throws a ConnectException if any of the requests fail
             Promise\unwrap($promises);
-        } catch( ConnectException $connectException ) {
+        } catch (ConnectException $connectException) {
             // Do nothing on errors...
         }
 
@@ -109,17 +112,17 @@ function webhooks_post_all($data, $action_type) {
     }
 }
 
-function webhooks_formulaire() {
-
-    if( $_POST['url'] ) {
+function webhooks_formulaire()
+{
+    if (!empty($_POST['url'])) {
 
         // First delete all existing triples for this resource
         $GLOBALS['wiki']->DeleteTriple($GLOBALS['wiki']->GetPageTag(), WEBHOOKS_VOCABULARY_WEBHOOK, null, '', '');
 
         $numFields = count($_POST['url']);
 
-        for( $i=0; $i<$numFields; $i++ ) {
-            if( is_valid_url(trim($_POST['url'][$i])) ) {
+        for ($i=0; $i<$numFields; $i++) {
+            if (is_valid_url(trim($_POST['url'][$i]))) {
                 $GLOBALS['wiki']->InsertTriple(
                     $GLOBALS['wiki']->GetPageTag(),
                     WEBHOOKS_VOCABULARY_WEBHOOK,
@@ -138,13 +141,11 @@ function webhooks_formulaire() {
         header('Location:' . $_SERVER['REQUEST_URI']);
     }
 
-    $template_name = 'themes/tools/webhooks/templates/webhooks_form.tpl.html';
-    if (!is_file($template_name)) $template_name = 'tools/webhooks/presentation/templates/webhooks_form.tpl.html';
-
     include_once 'includes/squelettephp.class.php';
-    $templateforms = new SquelettePhp($template_name);
-    $templateforms->set('webhooks', get_all_webhooks());
-    $templateforms->set('forms', $GLOBALS['_BAZAR_']['form']);
-    $templateforms->set('formats', $GLOBALS['wiki']->config['WEBHOOKS_FORMATS']);
-    return $templateforms->analyser();
+    $templateforms = new SquelettePhp('webhooks_form.tpl.html', 'webhooks');
+    return $templateforms->render([
+        'webhooks' => get_all_webhooks(),
+        'forms' => $GLOBALS['_BAZAR_']['form'],
+        'formats' => $GLOBALS['wiki']->config['WEBHOOKS_FORMATS']
+    ]);
 }
