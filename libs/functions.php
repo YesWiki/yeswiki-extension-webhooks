@@ -3,6 +3,7 @@
 use GuzzleHttp\Client;
 use GuzzleHttp\Promise;
 use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\ServerException;
 
 function get_all_webhooks($form_id=0)
 {
@@ -103,6 +104,8 @@ function webhooks_post_all($data, $action_type)
             // Throws a ConnectException if any of the requests fail
             Promise\unwrap($promises);
         } catch (ConnectException $connectException) {
+            // Do nothing on errors...
+        } catch (ServerException $serverException) {
             // Do nothing on errors...
         }
 
