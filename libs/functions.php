@@ -45,16 +45,85 @@ function get_notification_text($data, $action_type, $user_name)
     }
 }
 
+function format_date_xsd($date) {
+    $date_array = explode(" ", $date);
+    return $date_array[0] . "T" . $date_array[1] . "Z";
+}
+
+function get_actor_uri($actor) {
+    if ($GLOBALS['wiki']->config['webhooks_activitypub_default_actor'] !== '') {
+        // If a default global-wide actor is defined, use it
+        return $GLOBALS['wiki']->config['webhooks_activitypub_default_actor'];
+    } else {
+        // If no field is marked as an actor, take the current logged-in user
+        if( !$actor ) $actor = $GLOBALS['wiki']->href('', $GLOBALS['wiki']->getUser() ? $GLOBALS['wiki']->getUser()['name'] : _t('WEBHOOKS_ANONYMOUS_USER'));
+        // If a base URL is defined in the configs, replace the yeswiki base URL with it
+        if( $GLOBALS['wiki']->config['webhooks_activitypub_actors_base_url'] !== '' ) {
+            $actor = str_replace($GLOBALS['wiki']->config['base_url'], '', $actor);
+            return $GLOBALS['wiki']->config['webhooks_activitypub_actors_base_url'] . $actor;
+        } else {
+            return $actor;
+        }
+    }
+}
+
 function format_json_data($format, $data)
 {
     switch ($format) {
         case WEBHOOKS_FORMAT_RAW:
             return $data;
 
+        case WEBHOOKS_FORMAT_ACTIVITYPUB:
+            $semanticData = $data['data']['semantic'];
+            if( !$semanticData ) throw new Exception("Webhook error: unable to format data for activitypub (no semantic data defined)");;
+
+            $actorUri = get_actor_uri($semanticData['actor']);
+            $to = [
+                $actorUri . "/followers",
+                WEBHOOKS_ACTIVITYPUB_PUBLIC_URI
+            ];
+            $activityPubActions = [
+                WEBHOOKS_ACTION_ADD => "Create",
+                WEBHOOKS_ACTION_EDIT => "Update",
+                WEBHOOKS_ACTION_DELETE => "Delete"
+            ];
+
+            if( $data['action'] === WEBHOOKS_ACTION_DELETE ) {
+                $object = $semanticData['@id'];
+            } else {
+                $object = array_merge(
+                    [
+                        // In ActivityPub, IDs and types are defined without the @ prefix (go figure ?)
+                        'id' => $semanticData['@id'],
+                        'type' => $semanticData['@type'],
+                        'attributedTo' => $actorUri,
+                        'to' => $to,
+                        // If published or updated are defined as a semantic field, this will be overwritten
+                        'published' => format_date_xsd($data['data']['date_creation_fiche']),
+                        'updated' => format_date_xsd($data['data']['date_maj_fiche'])
+                    ],
+                    $data['data']['semantic']
+                );
+
+                // Remove unused keys
+                unset($object['@context']);
+                unset($object['@type']);
+                unset($object['@id']);
+                unset($object['actor']);
+            }
+
+            return [
+                "@context" => $semanticData['@context'],
+                "type" => $activityPubActions[$data['action']],
+                "to" => $to,
+                "actor" => $actorUri,
+                "object" => $object
+            ];
+
         case WEBHOOKS_FORMAT_MATTERMOST:
             return [
-                "username" => $GLOBALS['wiki']->config['WEBHOOKS_BOT_NAME'],
-                "icon_url" => $GLOBALS['wiki']->config['WEBHOOKS_BOT_ICON'],
+                "username" => $GLOBALS['wiki']->config['webhooks_bot_name'],
+                "icon_url" => $GLOBALS['wiki']->config['webhooks_bot_icon'],
                 "text" => $data['text']
             ];
 
@@ -74,6 +143,19 @@ function webhooks_post_all($data, $action_type)
     $webhooks = get_all_webhooks($form_id);
 
     if (count($webhooks) > 0) {
+
+        // Add the semantic data if they don't already exist
+
+        if( !$data['semantic'] ) {
+            // If one of the webhook using activitypub ?
+            $activityPubWebhooks = array_filter($webhooks, function($webhook) {
+                return $webhook['format'] = WEBHOOKS_FORMAT_ACTIVITYPUB;
+            });
+
+            if( count($activityPubWebhooks) > 0 ) {
+                $data['semantic'] = baz_format_jsonld($data);
+            }
+        }
 
         // Prepare data to send
 
@@ -149,6 +231,6 @@ function webhooks_formulaire()
     return $templateforms->render([
         'webhooks' => get_all_webhooks(),
         'forms' => $GLOBALS['_BAZAR_']['form'],
-        'formats' => $GLOBALS['wiki']->config['WEBHOOKS_FORMATS']
+        'formats' => $GLOBALS['wiki']->config['webhooks_formats']
     ]);
 }

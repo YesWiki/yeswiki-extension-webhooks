@@ -6,6 +6,7 @@ $GLOBALS['translations'] = array_merge(
         'WEBHOOKS_CONFIG_TITLE' => 'Webhooks sortants',
         'WEBHOOKS_CONFIG_DESC' => 'Les URLs que vous définissez ci-dessous seront appelés à chaque ajout / modification / suppression de fiche BazaR.',
         'WEBHOOKS_FORMAT_RAW' => 'Brut',
+        'WEBHOOKS_FORMAT_ACTIVITYPUB' => 'ActivityPub',
         'WEBHOOKS_FORMAT_MATTERMOST' => 'Mattermost',
         'WEBHOOKS_FORMAT_SLACK' => 'Slack',
         'WEBHOOKS_URL_PLACEHOLDER' => 'Adresse URL',

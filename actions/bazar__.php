@@ -9,7 +9,7 @@ $GLOBALS['params'] = getAllParameters($this);
 switch ($GLOBALS['params']['vue']) {
     // Display webhooks form
     case BAZ_VOIR_FORMULAIRE:
-        if( !isset($GLOBALS['params']['action_formulaire']) ) {
+        if( !isset($_GET['action_formulaire']) ) {
             echo webhooks_formulaire();
         }
         break;
