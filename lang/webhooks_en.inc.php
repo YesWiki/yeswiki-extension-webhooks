@@ -13,5 +13,7 @@ $GLOBALS['translations'] = array_merge(
         'WEBHOOKS_UPDATE' => 'Update',
         'WEBHOOKS_ANONYMOUS_USER' => 'Anonymous',
         'WEBHOOKS_FORMS_ALL' => 'All Bazar items',
+        'WEBHOOKS_ERROR_INVALID_URL' => 'The given link is invalid',
+        'WEBHOOKS_ERROR_FORM_NOT_SEMANTIC' => 'One or more selected form is not semantic, the ActivityPub format cannot be used',
     )
 );

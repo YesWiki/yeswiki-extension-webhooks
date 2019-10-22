@@ -207,7 +207,31 @@ function webhooks_formulaire()
         $numFields = count($_POST['url']);
 
         for ($i=0; $i<$numFields; $i++) {
-            if (is_valid_url(trim($_POST['url'][$i]))) {
+            if( $_POST['url'][$i] ) {
+                // Check that URL is valid
+                if (!is_valid_url(trim($_POST['url'][$i]))) exit(_t('WEBHOOKS_ERROR_INVALID_URL'));
+
+                // If ActivityPub is selected, check that the selected form(s) are semantic
+                if ($_POST['format'][$i] === WEBHOOKS_FORMAT_ACTIVITYPUB) {
+                    $formId = intval($_POST['form'][$i]);
+
+                    if ($formId === 0) {
+                        // Check that all forms are semantic
+                        foreach ($GLOBALS['_BAZAR_']['form'] as $form) {
+                            if (!$form['bn_sem_type']) {
+                                exit(_t('WEBHOOKS_ERROR_FORM_NOT_SEMANTIC'));
+                            }
+                        }
+                    } else {
+                        // Check that the selected form is semantic
+                        $form = baz_valeurs_formulaire($formId);
+                        if (!$form['bn_sem_type']) {
+                            exit(_t('WEBHOOKS_ERROR_FORM_NOT_SEMANTIC'));
+                        }
+                    }
+                }
+
+                // All good, save webhook
                 $GLOBALS['wiki']->InsertTriple(
                     $GLOBALS['wiki']->GetPageTag(),
                     WEBHOOKS_VOCABULARY_WEBHOOK,
