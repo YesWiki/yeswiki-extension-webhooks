@@ -147,13 +147,13 @@ function webhooks_post_all($data, $action_type)
         // Add the semantic data if they don't already exist
 
         if( !$data['semantic'] ) {
-            // If one of the webhook using activitypub ?
+            // If one of the webhook is using ActivityPub
             $activityPubWebhooks = array_filter($webhooks, function($webhook) {
                 return $webhook['format'] = WEBHOOKS_FORMAT_ACTIVITYPUB;
             });
 
             if( count($activityPubWebhooks) > 0 ) {
-                $data['semantic'] = baz_format_jsonld($data);
+                baz_append_semantic_data($data, true);
             }
         }
 
