@@ -153,7 +153,7 @@ function webhooks_post_all($data, $action_type)
             });
 
             if( count($activityPubWebhooks) > 0 ) {
-                baz_append_semantic_data($data, true);
+                baz_append_semantic_data($data, $data['id_typeannonce'], true);
             }
         }
 
