@@ -43,4 +43,4 @@ $wakkaConfig['webhooks_activitypub_actors_base_url'] = getConfigValue('webhooks_
 // Bot config (works for Mattermost if username and profile picture override is enabled)
 // See https://docs.mattermost.com/developer/webhooks-incoming.html
 $wakkaConfig['webhooks_bot_name'] = getConfigValue('webhooks_bot_name', "YesWiki Bot", $wakkaConfig);
-$wakkaConfig['webhooks_bot_icon'] = getConfigValue('webhooks_bot_icon', "https://yeswiki.net/files/PageHeader_yeswikiprovisoire_vignette_97_97_20181206153605_20181206154004.png", $wakkaConfig);
+$wakkaConfig['webhooks_bot_icon'] = getConfigValue('webhooks_bot_icon', $GLOBALS['wiki']->getBaseUrl().'/'."tools/webhooks/presentation/images/default-bot.png", $wakkaConfig);
