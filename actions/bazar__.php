@@ -4,6 +4,8 @@ if (!defined('WIKINI_VERSION')) {
     die('acc&egrave;s direct interdit');
 }
 
+global $bazarFiche;
+
 $GLOBALS['params'] = getAllParameters($this);
 
 switch ($GLOBALS['params']['vue']) {
@@ -22,8 +24,8 @@ switch ($GLOBALS['params']['vue']) {
                     // We set this condition because otherwise the page is called twice and the webhook is sent twice
                     // TODO: Understand why the YesWiki core calls this kind of page twice
                     if( !isset($GLOBALS['add_webhook_already_called']) ) {
-                        $data = baz_valeurs_fiche($_GET['id_fiche']);
-                        webhooks_post_all($data, WEBHOOKS_ACTION_ADD);
+                        $fiche = $bazarFiche->getOne($_GET['id_fiche']);
+                        webhooks_post_all($fiche, WEBHOOKS_ACTION_ADD);
                         $GLOBALS['add_webhook_already_called'] = true;
                     }
                 }
