@@ -5,8 +5,8 @@ if (!defined("WIKINI_VERSION")) {
     die("acc&egrave;s direct interdit");
 }
 
-global $bazarFiche;
+$ficheManager = $this->services->get('bazar.fiche.manager');
 
-if ($this->HasAccess('write') && $bazarFiche->isFiche($this->GetPageTag()) && isset($_POST['bf_titre'])) {
+if ($this->HasAccess('write') && $ficheManager->isFiche($this->GetPageTag()) && isset($_POST['bf_titre'])) {
     webhooks_post_all($_POST, WEBHOOKS_ACTION_EDIT);
 }
