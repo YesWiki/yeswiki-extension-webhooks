@@ -153,7 +153,7 @@ function webhooks_post_all($data, $action_type)
             });
 
             if( count($activityPubWebhooks) > 0 ) {
-                $data['semantic'] = $GLOBALS['bazarFiche']->convertToSemanticData($data['id_typeannonce'], $data);
+                $data['semantic'] = $GLOBALS['wiki']->services->get('bazar.fiche.manager')->convertToSemanticData($data['id_typeannonce'], $data);
             }
         }
 
