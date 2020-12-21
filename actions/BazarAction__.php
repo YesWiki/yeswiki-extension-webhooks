@@ -6,7 +6,7 @@ use YesWiki\Core\YesWikiAction;
 
 class BazarAction__ extends YesWikiAction
 {
-    function run($arguments)
+    function run()
     {
         $ficheManager = $this->getService(FicheManager::class);
         $tripleStore = $this->getService(TripleStore::class);
