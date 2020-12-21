@@ -11,15 +11,13 @@ class BazarAction__ extends YesWikiAction
         $ficheManager = $this->getService(FicheManager::class);
         $tripleStore = $this->getService(TripleStore::class);
 
-        $GLOBALS['params'] = getAllParameters($this->wiki);
-
         $view = $GLOBALS['params'][BazarAction::VARIABLE_VOIR];
         $action = $GLOBALS['params'][BazarAction::VARIABLE_ACTION];
 
         switch ($view) {
             // Display webhooks form before the forms list
             case BazarAction::VOIR_FORMULAIRE:
-                if( !isset($_GET['action_formulaire']) ) {
+                if( !isset($_GET['action']) ) {
                     return webhooks_formulaire();
                 }
                 break;
