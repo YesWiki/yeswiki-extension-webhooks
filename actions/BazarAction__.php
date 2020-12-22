@@ -25,7 +25,7 @@ class BazarAction__ extends YesWikiAction
             // Call webhook on addition
             case BazarAction::VOIR_CONSULTER:
                 switch($action) {
-                    case BazarAction::VOIR_FICHE:
+                    case BazarAction::ACTION_ENTRY_VIEW:
                         if( $_GET['message']==='ajout_ok' ) {
                             // We set this condition because otherwise the page is called twice and the webhook is sent twice
                             // TODO: Understand why the YesWiki core calls this kind of page twice
