@@ -1,13 +1,13 @@
 <?php
 
-use YesWiki\Bazar\Service\FicheManager;
+use YesWiki\Bazar\Service\EntryManager;
 
 if (!defined("WIKINI_VERSION")) {
     die("acc&egrave;s direct interdit");
 }
 
-$ficheManager = $this->services->get(FicheManager::class);
+$entryManager = $this->services->get(EntryManager::class);
 
-if ($this->HasAccess('write') && $ficheManager->isFiche($this->GetPageTag()) && isset($_POST['bf_titre'])) {
+if ($this->HasAccess('write') && $entryManager->isEntry($this->GetPageTag()) && isset($_POST['bf_titre'])) {
     webhooks_post_all($_POST, WEBHOOKS_ACTION_EDIT);
 }

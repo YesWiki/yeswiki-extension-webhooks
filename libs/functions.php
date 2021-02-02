@@ -4,7 +4,8 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Promise;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\ServerException;
-use YesWiki\Bazar\Service\FicheManager;
+use YesWiki\Bazar\Service\EntryManager;
+use YesWiki\Bazar\Service\FormManager;
 
 function get_all_webhooks($form_id=0)
 {
@@ -46,20 +47,24 @@ function get_notification_text($data, $action_type, $user_name)
     }
 }
 
-function format_date_xsd($date) {
+function format_date_xsd($date)
+{
     $date_array = explode(" ", $date);
     return $date_array[0] . "T" . $date_array[1] . "Z";
 }
 
-function get_actor_uri($actor) {
+function get_actor_uri($actor)
+{
     if ($GLOBALS['wiki']->config['webhooks_activitypub_default_actor'] !== '') {
         // If a default global-wide actor is defined, use it
         return $GLOBALS['wiki']->config['webhooks_activitypub_default_actor'];
     } else {
         // If no field is marked as an actor, take the current logged-in user
-        if( !$actor ) $actor = $GLOBALS['wiki']->href('', $GLOBALS['wiki']->getUser() ? $GLOBALS['wiki']->getUser()['name'] : _t('WEBHOOKS_ANONYMOUS_USER'));
+        if (!$actor) {
+            $actor = $GLOBALS['wiki']->href('', $GLOBALS['wiki']->getUser() ? $GLOBALS['wiki']->getUser()['name'] : _t('WEBHOOKS_ANONYMOUS_USER'));
+        }
         // If a base URL is defined in the configs, replace the yeswiki base URL with it
-        if( $GLOBALS['wiki']->config['webhooks_activitypub_actors_base_url'] !== '' ) {
+        if ($GLOBALS['wiki']->config['webhooks_activitypub_actors_base_url'] !== '') {
             $actor = str_replace($GLOBALS['wiki']->config['base_url'], '', $actor);
             return $GLOBALS['wiki']->config['webhooks_activitypub_actors_base_url'] . $actor;
         } else {
@@ -76,7 +81,9 @@ function format_json_data($format, $data)
 
         case WEBHOOKS_FORMAT_ACTIVITYPUB:
             $semanticData = $data['data']['semantic'];
-            if( !$semanticData ) throw new Exception("Webhook error: unable to format data for activitypub (no semantic data defined)");;
+            if (!$semanticData) {
+                throw new Exception("Webhook error: unable to format data for activitypub (no semantic data defined)");
+            };
 
             $actorUri = get_actor_uri($semanticData['actor']);
             $to = [
@@ -89,7 +96,7 @@ function format_json_data($format, $data)
                 WEBHOOKS_ACTION_DELETE => "Delete"
             ];
 
-            if( $data['action'] === WEBHOOKS_ACTION_DELETE ) {
+            if ($data['action'] === WEBHOOKS_ACTION_DELETE) {
                 $object = $semanticData['@id'];
             } else {
                 $object = array_merge(
@@ -147,14 +154,14 @@ function webhooks_post_all($data, $action_type)
 
         // Add the semantic data if they don't already exist
 
-        if( !$data['semantic'] ) {
+        if (!$data['semantic']) {
             // If one of the webhook is using ActivityPub
-            $activityPubWebhooks = array_filter($webhooks, function($webhook) {
+            $activityPubWebhooks = array_filter($webhooks, function ($webhook) {
                 return $webhook['format'] === WEBHOOKS_FORMAT_ACTIVITYPUB;
             });
 
-            if( count($activityPubWebhooks) > 0 ) {
-                $data['semantic'] = $GLOBALS['wiki']->services->get(FicheManager::class)->convertToSemanticData($data['id_typeannonce'], $data);
+            if (count($activityPubWebhooks) > 0) {
+                $data['semantic'] = $GLOBALS['wiki']->services->get(EntryManager::class)->convertToSemanticData($data['id_typeannonce'], $data);
             }
         }
 
@@ -208,9 +215,11 @@ function webhooks_formulaire()
         $numFields = count($_POST['url']);
 
         for ($i=0; $i<$numFields; $i++) {
-            if( $_POST['url'][$i] ) {
+            if ($_POST['url'][$i]) {
                 // Check that URL is valid
-                if (!is_valid_url(trim($_POST['url'][$i]))) exit(_t('WEBHOOKS_ERROR_INVALID_URL'));
+                if (!is_valid_url(trim($_POST['url'][$i]))) {
+                    exit(_t('WEBHOOKS_ERROR_INVALID_URL'));
+                }
 
                 // If ActivityPub is selected, check that the selected form(s) are semantic
                 if ($_POST['format'][$i] === WEBHOOKS_FORMAT_ACTIVITYPUB) {
@@ -218,7 +227,7 @@ function webhooks_formulaire()
 
                     if ($formId === 0) {
                         // Check that all forms are semantic
-                        foreach ($GLOBALS['_BAZAR_']['form'] as $form) {
+                        foreach ($GLOBALS['wiki']->services->get(FormManager::class)->getAll() as $form) {
                             if (!$form['bn_sem_type']) {
                                 exit(_t('WEBHOOKS_ERROR_FORM_NOT_SEMANTIC'));
                             }
@@ -254,8 +263,9 @@ function webhooks_formulaire()
     include_once 'includes/squelettephp.class.php';
     $templateforms = new SquelettePhp('webhooks_form.tpl.html', 'webhooks');
     return $templateforms->render([
+        'url' => getAbsoluteUrl(),
         'webhooks' => get_all_webhooks(),
-        'forms' => $GLOBALS['_BAZAR_']['form'],
+        'forms' => $GLOBALS['wiki']->services->get(FormManager::class)->getAll(),
         'formats' => $GLOBALS['wiki']->config['webhooks_formats']
     ]);
 }
