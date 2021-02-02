@@ -6,7 +6,7 @@ use YesWiki\Core\YesWikiAction;
 
 class BazarAction__ extends YesWikiAction
 {
-    function run()
+    public function run()
     {
         $entryManager = $this->getService(EntryManager::class);
         $tripleStore = $this->getService(TripleStore::class);
@@ -17,19 +17,19 @@ class BazarAction__ extends YesWikiAction
         switch ($view) {
             // Display webhooks form before the forms list
             case BazarAction::VOIR_FORMULAIRE:
-                if( !isset($_GET['action']) ) {
+                if (!isset($_GET['action'])) {
                     return webhooks_formulaire();
                 }
                 break;
 
             // Call webhook on addition
             case BazarAction::VOIR_CONSULTER:
-                switch($action) {
+                switch ($action) {
                     case BazarAction::ACTION_ENTRY_VIEW:
-                        if( $_GET['message']==='ajout_ok' ) {
+                        if (isset($_GET['message']) && $_GET['message']==='ajout_ok') {
                             // We set this condition because otherwise the page is called twice and the webhook is sent twice
                             // TODO: Understand why the YesWiki core calls this kind of page twice
-                            if( !isset($GLOBALS['add_webhook_already_called']) ) {
+                            if (!isset($GLOBALS['add_webhook_already_called'])) {
                                 $fiche = $entryManager->getOne($_GET['id_fiche']);
                                 webhooks_post_all($fiche, WEBHOOKS_ACTION_ADD);
                                 $GLOBALS['add_webhook_already_called'] = true;
@@ -49,6 +49,5 @@ class BazarAction__ extends YesWikiAction
                 );
                 break;
         }
-
     }
 }

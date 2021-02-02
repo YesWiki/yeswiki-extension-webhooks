@@ -227,7 +227,7 @@ function webhooks_formulaire()
 
                     if ($formId === 0) {
                         // Check that all forms are semantic
-                        foreach ($GLOBALS['_BAZAR_']['form'] as $form) {
+                        foreach ($GLOBALS['wiki']->services->get(FormManager::class)->getAll() as $form) {
                             if (!$form['bn_sem_type']) {
                                 exit(_t('WEBHOOKS_ERROR_FORM_NOT_SEMANTIC'));
                             }
@@ -263,6 +263,7 @@ function webhooks_formulaire()
     include_once 'includes/squelettephp.class.php';
     $templateforms = new SquelettePhp('webhooks_form.tpl.html', 'webhooks');
     return $templateforms->render([
+        'url' => getAbsoluteUrl(),
         'webhooks' => get_all_webhooks(),
         'forms' => $GLOBALS['wiki']->services->get(FormManager::class)->getAll(),
         'formats' => $GLOBALS['wiki']->config['webhooks_formats']
