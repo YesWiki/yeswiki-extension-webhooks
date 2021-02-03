@@ -8,7 +8,7 @@ if (!defined("WIKINI_VERSION")) {
 
 $entryManager = $this->services->get(EntryManager::class);
 
-if ($this->HasAccess('write') && $entryManager->isEntry($this->GetPageTag()) && $_GET['confirme']==='oui') {
-    $data = json_decode($GLOBALS['wiki']->page['body'], true);
+if ($this->HasAccess('write') && $entryManager->isEntry($this->GetPageTag()) && isset($_GET['confirme']) && $_GET['confirme']==='oui') {
+    $data = $entryManager->getOne($this->GetPageTag());
     webhooks_post_all($data, WEBHOOKS_ACTION_DELETE);
 }
