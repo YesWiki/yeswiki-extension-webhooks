@@ -6,13 +6,21 @@ use YesWiki\Core\YesWikiAction;
 
 class BazarAction__ extends YesWikiAction
 {
+    public function formatArguments($arg)
+    {
+        return([
+            BazarAction::VARIABLE_ACTION => $arg[BazarAction::VARIABLE_ACTION] ?? $_GET[BazarAction::VARIABLE_ACTION] ?? null,
+            BazarAction::VARIABLE_VOIR => $arg[BazarAction::VARIABLE_VOIR] ?? $_GET[BazarAction::VARIABLE_VOIR] ?? BazarAction::VOIR_DEFAUT,
+        ]);
+    }
+
     public function run()
     {
         $entryManager = $this->getService(EntryManager::class);
         $tripleStore = $this->getService(TripleStore::class);
 
-        $view = $GLOBALS['params'][BazarAction::VARIABLE_VOIR];
-        $action = $GLOBALS['params'][BazarAction::VARIABLE_ACTION];
+        $view = $this->arguments[BazarAction::VARIABLE_VOIR];
+        $action = $this->arguments[BazarAction::VARIABLE_ACTION];
 
         switch ($view) {
             // Display webhooks form before the forms list
