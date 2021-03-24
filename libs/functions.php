@@ -154,7 +154,7 @@ function webhooks_post_all($data, $action_type)
 
         // Add the semantic data if they don't already exist
 
-        if (!$data['semantic']) {
+        if (!isset($data['semantic'])) {
             // If one of the webhook is using ActivityPub
             $activityPubWebhooks = array_filter($webhooks, function ($webhook) {
                 return $webhook['format'] === WEBHOOKS_FORMAT_ACTIVITYPUB;
