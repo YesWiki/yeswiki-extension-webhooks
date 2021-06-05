@@ -4,7 +4,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Promise;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\ServerException;
-use YesWiki\Bazar\Service\EntryManager;
+use YesWiki\Bazar\Service\SemanticTransformer;
 use YesWiki\Bazar\Service\FormManager;
 
 function get_all_webhooks($form_id=0)
@@ -161,7 +161,7 @@ function webhooks_post_all($data, $action_type)
             });
 
             if (count($activityPubWebhooks) > 0) {
-                $data['semantic'] = $GLOBALS['wiki']->services->get(EntryManager::class)->convertToSemanticData($data['id_typeannonce'], $data);
+                $data['semantic'] = $GLOBALS['wiki']->services->get(SemanticTransformer::class)->convertToSemanticData($data['id_typeannonce'], $data);
             }
         }
 
