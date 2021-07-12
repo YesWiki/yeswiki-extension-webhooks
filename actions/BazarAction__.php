@@ -11,6 +11,7 @@ class BazarAction__ extends YesWikiAction
         return([
             BazarAction::VARIABLE_ACTION => $_GET[BazarAction::VARIABLE_ACTION] ?? $arg[BazarAction::VARIABLE_ACTION] ?? null,
             BazarAction::VARIABLE_VOIR => $_GET[BazarAction::VARIABLE_VOIR] ?? $arg[BazarAction::VARIABLE_VOIR] ?? BazarAction::VOIR_DEFAUT,
+            'redirecturl' => $arg['redirecturl'] ?? ''
         ]);
     }
 
@@ -41,6 +42,10 @@ class BazarAction__ extends YesWikiAction
                                 $fiche = $entryManager->getOne($_GET['id_fiche']);
                                 webhooks_post_all($fiche, WEBHOOKS_ACTION_ADD);
                                 $GLOBALS['add_webhook_already_called'] = true;
+                                if (!empty($this->arguments['redirecturl'])) {
+                                    header('Location: ' . $this->arguments['redirecturl']);
+                                    exit;
+                                }
                             }
                         }
                 }
