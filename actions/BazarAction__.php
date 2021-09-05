@@ -1,5 +1,8 @@
 <?php
 
+namespace YesWiki\Webhooks;
+
+use BazarAction;
 use YesWiki\Bazar\Service\EntryManager;
 use YesWiki\Core\Service\TripleStore;
 use YesWiki\Core\YesWikiAction;
