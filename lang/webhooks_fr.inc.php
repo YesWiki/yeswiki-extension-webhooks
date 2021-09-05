@@ -15,5 +15,6 @@ $GLOBALS['translations'] = array_merge(
         'WEBHOOKS_FORMS_ALL' => 'Tous les éléments du Bazar',
         'WEBHOOKS_ERROR_INVALID_URL' => 'Le lien fourni n\'est pas valide',
         'WEBHOOKS_ERROR_FORM_NOT_SEMANTIC' => 'Un ou plusieurs formulaires sélectionnés n\'est pas défini sémantiquement, le format ActivityPub ne peut être utilisé',
+        'WEBHOOKS_VISIBLE_ONLY_FOR_ADMINS' => 'Visible uniquement pour les administrateurs',
     )
 );

@@ -6,14 +6,14 @@
     <div class="form-group">
         <?php for($i = 0; $i<=count($webhooks); $i++): ?>
         <div class="col-sm-2">
-            <select class="form-control" name="format[]">
+            <select class="form-control" name="format[]" <?php echo((isset($webhooks[$i]) && !$GLOBALS['wiki']->UserIsAdmin()) ? 'disabled' : '' );?>>
                 <?php foreach( $formats as $key => $label ): ?>
                 <option value="<?=$key?>" <?php echo(isset($webhooks[$i]) && $webhooks[$i]['format']===$key ? "selected" : ""); ?>><?=_t($label)?></option>
                 <?php endforeach; ?>
             </select>
         </div>
         <div class="col-sm-2">
-            <select class="form-control" name="form[]">
+            <select class="form-control" name="form[]" <?php echo((isset($webhooks[$i]) && !$GLOBALS['wiki']->UserIsAdmin()) ? 'disabled' : '' );?>>
                 <option value="0"><?=_t('WEBHOOKS_FORMS_ALL')?></option>
                 <?php foreach( $forms as $key => $form ): ?>
                 <option value="<?=$key?>" <?php echo(isset($webhooks[$i]) && $key===intval($webhooks[$i]['form']) ? "selected" : ""); ?>><?=$form['bn_label_nature']?></option>
@@ -21,11 +21,11 @@
             </select>
         </div>
         <div class="col-sm-8">
-            <input type="text" name="url[]" value="<?php echo(isset($webhooks[$i]) ? $webhooks[$i]['url'] : ""); ?>" class="form-control" placeholder="<?=_t('WEBHOOKS_URL_PLACEHOLDER')?>">
+            <input type="text" name="url[]" <?php echo((isset($webhooks[$i]) && !$GLOBALS['wiki']->UserIsAdmin()) ? 'disabled data-toggle="tooltip" data-placement="bottom" title="'._t('WEBHOOKS_VISIBLE_ONLY_FOR_ADMINS').'"' : ''); ?> value="<?php echo( isset($webhooks[$i]) ? ($GLOBALS['wiki']->UserIsAdmin() ? $webhooks[$i]['url'] : '***** '._t('WEBHOOKS_VISIBLE_ONLY_FOR_ADMINS').' *****') : ""); ?>" class="form-control" placeholder="<?=_t('WEBHOOKS_URL_PLACEHOLDER')?>">
         </div>
         <?php endfor; ?>
     </div>
     <span class="input-group-btn">
-        <button id="btn-set-webhooks"<?php if (!$GLOBALS['wiki']->GetUser()) :?> disabled<?php endif; ?> class="btn btn-primary pull-right" type="submit"><?=_t('WEBHOOKS_UPDATE')?></button>
+        <button id="btn-set-webhooks"<?php if (!$GLOBALS['wiki']->GetUser()) :?> disabled data-toggle="tooltip" data-placement="bottom" title="<?php echo _t('LOGGED_USERS_ONLY_ACTION') ;?>"<?php endif; ?> class="btn btn-primary pull-right" type="submit"><?=_t('WEBHOOKS_UPDATE')?></button>
     </span>
 </form>
