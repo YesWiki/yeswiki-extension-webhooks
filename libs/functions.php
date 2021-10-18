@@ -207,12 +207,10 @@ function webhooks_post_all($data, $action_type)
 
 function webhooks_formulaire()
 {
-    if (!empty($_POST['url']) && !empty($GLOBALS['wiki']->getUser())) {
+    if (!empty($_POST['url']) && $GLOBALS['wiki']->UserIsAdmin()) {
 
         // First delete all existing triples for this resource
-        if ($GLOBALS['wiki']->UserIsAdmin()) {
-            $GLOBALS['wiki']->DeleteTriple($GLOBALS['wiki']->GetPageTag(), WEBHOOKS_VOCABULARY_WEBHOOK, null, '', '');
-        }
+        $GLOBALS['wiki']->DeleteTriple($GLOBALS['wiki']->GetPageTag(), WEBHOOKS_VOCABULARY_WEBHOOK, null, '', '');
 
         $numFields = count($_POST['url']);
 

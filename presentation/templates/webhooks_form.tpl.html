@@ -4,7 +4,8 @@
 
 <form action="<?php echo $url ?>" method="POST" class="form-horizontal">
     <div class="form-group">
-        <?php for($i = 0; $i<=count($webhooks); $i++): ?>
+        <?php $delta = $GLOBALS['wiki']->UserIsAdmin() ? 0 : -1; ?>
+        <?php for($i = 0; $i<=(count($webhooks)+ $delta); $i++): ?>
         <div class="col-sm-2">
             <select class="form-control" name="format[]" <?php echo((isset($webhooks[$i]) && !$GLOBALS['wiki']->UserIsAdmin()) ? 'disabled' : '' );?>>
                 <?php foreach( $formats as $key => $label ): ?>
@@ -26,6 +27,6 @@
         <?php endfor; ?>
     </div>
     <span class="input-group-btn">
-        <button id="btn-set-webhooks"<?php if (!$GLOBALS['wiki']->GetUser()) :?> disabled data-toggle="tooltip" data-placement="bottom" title="<?php echo _t('LOGGED_USERS_ONLY_ACTION') ;?>"<?php endif; ?> class="btn btn-primary pull-right" type="submit"><?=_t('WEBHOOKS_UPDATE')?></button>
+        <button id="btn-set-webhooks"<?php if (!$GLOBALS['wiki']->UserIsAdmin()) :?> disabled data-toggle="tooltip" data-placement="bottom" title="<?php echo _t('BAZ_NEED_ADMIN_RIGHTS') ;?>"<?php endif; ?> class="btn btn-primary pull-right" type="submit"><?=_t('WEBHOOKS_UPDATE')?></button>
     </span>
 </form>
