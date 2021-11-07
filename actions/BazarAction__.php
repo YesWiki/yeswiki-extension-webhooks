@@ -43,7 +43,9 @@ class BazarAction__ extends YesWikiAction
                             // TODO: Understand why the YesWiki core calls this kind of page twice (JD : see LinkTraking)
                             if (!isset($GLOBALS['add_webhook_already_called'])) {
                                 $fiche = $entryManager->getOne($_GET['id_fiche']);
-                                webhooks_post_all($fiche, WEBHOOKS_ACTION_ADD);
+                                if (!empty($fiche)) {
+                                    webhooks_post_all($fiche, WEBHOOKS_ACTION_ADD);
+                                }
                                 $GLOBALS['add_webhook_already_called'] = true;
                                 if (!empty($this->arguments['redirecturl'])) {
                                     header('Location: ' . $this->arguments['redirecturl']);
