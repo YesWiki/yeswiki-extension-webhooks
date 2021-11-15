@@ -4,6 +4,7 @@ parameters:
     activitypub: 'WEBHOOKS_FORMAT_ACTIVITYPUB'
     mattermost: 'WEBHOOKS_FORMAT_MATTERMOST'
     slack: 'WEBHOOKS_FORMAT_SLACK'
+    yeswiki: 'WEBHOOKS_FORMAT_YESWIKI'
   webhooks_activitypub_default_actor: '' # If no actor field is defined semantically, this value will be used
   webhooks_activitypub_actors_base_url: '' # If an actor is defined, we can override the base URL with this config
   # Bot config (works for Mattermost if username and profile picture override is enabled)

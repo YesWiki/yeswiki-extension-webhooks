@@ -13,6 +13,7 @@ define('WEBHOOKS_FORMAT_RAW', 'raw');
 define('WEBHOOKS_FORMAT_ACTIVITYPUB', 'activitypub');
 define('WEBHOOKS_FORMAT_MATTERMOST', 'mattermost');
 define('WEBHOOKS_FORMAT_SLACK', 'slack');
+define('WEBHOOKS_FORMAT_YESWIKI', 'yeswiki');
 
 define('WEBHOOKS_VUE_TEST', 'test-webhook');
 
