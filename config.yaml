@@ -10,3 +10,12 @@ parameters:
   # See https://docs.mattermost.com/developer/webhooks-incoming.html
   webhooks_bot_name: 'YesWiki Bot'
   webhooks_bot_icon: '%base_url%tools/webhooks/presentation/images/default-bot.png'
+
+services:
+  _defaults:
+    autowire: true
+    public: true
+
+  # Allows to use controllers as services
+  YesWiki\Webhooks\Controller\:
+    resource: 'controllers/*'
