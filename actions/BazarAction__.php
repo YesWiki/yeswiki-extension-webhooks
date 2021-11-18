@@ -6,6 +6,7 @@ use BazarAction;
 use YesWiki\Bazar\Service\EntryManager;
 use YesWiki\Core\Service\TripleStore;
 use YesWiki\Core\YesWikiAction;
+use YesWiki\Webhooks\Controller\WebhooksController;
 
 class BazarAction__ extends YesWikiAction
 {
@@ -44,7 +45,8 @@ class BazarAction__ extends YesWikiAction
                             if (!isset($GLOBALS['add_webhook_already_called'])) {
                                 $fiche = $entryManager->getOne($_GET['id_fiche']);
                                 if (!empty($fiche['id_typeannonce'])) {
-                                    webhooks_post_all($fiche, WEBHOOKS_ACTION_ADD);
+                                    $webhooksController = $this->getService(WebhooksController::class);
+                                    $webhooksController->securedExecution('webhooks_post_all', $fiche, WEBHOOKS_ACTION_ADD);
                                 }
                                 $GLOBALS['add_webhook_already_called'] = true;
                                 if (!empty($this->arguments['redirecturl'])) {
