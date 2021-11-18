@@ -10,5 +10,7 @@ $entryManager = $this->services->get(EntryManager::class);
 
 if ($this->HasAccess('write') && $entryManager->isEntry($this->GetPageTag()) && isset($_GET['confirme']) && $_GET['confirme']==='oui') {
     $data = $entryManager->getOne($this->GetPageTag());
-    webhooks_post_all($data, WEBHOOKS_ACTION_DELETE);
+    if (!empty($data['id_typeannonce'])) {
+        webhooks_post_all($data, WEBHOOKS_ACTION_DELETE);
+    }
 }
