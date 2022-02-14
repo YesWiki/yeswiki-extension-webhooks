@@ -28,7 +28,7 @@ class __DeletePageHandler extends YesWikiHandler
             if (!empty($data['id_typeannonce'])) {
                 $csrfModeAvailable = $this->wiki->services->has(CsrfTokenManager::class);
                 if ($csrfModeAvailable) {
-                    $inputToken = filter_input(INPUT_POST, 'crsf-token', FILTER_SANITIZE_STRING);
+                    $inputToken = filter_input(INPUT_POST, 'csrf-token', FILTER_SANITIZE_STRING);
                     if (!is_null($inputToken) && $inputToken !== false) {
                         $tag = $this->wiki->GetPageTag();
                         $token = new CsrfToken("handler\deletepage\\$tag", $inputToken);
@@ -47,7 +47,7 @@ class __DeletePageHandler extends YesWikiHandler
                                         ) + (
                                             empty($_GET['eraselink']) ? [] : ['eraselink' => $_GET['eraselink']]
                                         ), false) .'" method="post" style="display: inline">'.
-                                    '<input type="hidden" name="crsf-token" value="'. htmlentities($csrfTokenManager->refreshToken("handler\deletepage\\$tag")) .'">'.
+                                    '<input type="hidden" name="csrf-token" value="'. htmlentities($csrfTokenManager->refreshToken("handler\deletepage\\$tag")) .'">'.
                                     '<input type="submit" class="btn btn-primary btn-xs" value="'._t('WEBHOOKS_FORCE_DELETE').'"/></form>');
                             }
                         }
