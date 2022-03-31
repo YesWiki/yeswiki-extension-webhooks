@@ -141,7 +141,7 @@ function format_json_data($format, $data)
         case WEBHOOKS_FORMAT_YESWIKI:
             // remove not used fields
             foreach ($data['data'] as $key => $value) {
-                if (!in_array($key, ['id_fiche','bf_titre','id_typeannonce'], true)) {
+                if (!in_array($key, ['id_fiche','bf_titre','id_typeannonce','url','date_maj_fiche'], true)) {
                     unset($data['data'][$key]);
                 }
             }
