@@ -1,5 +1,8 @@
 {
     "require": {
         "guzzlehttp/guzzle": "^6.3"
+    },
+    "conflict": {
+        "guzzlehttp/psr7": "<1.8.4"
     }
 }
