@@ -137,7 +137,62 @@ function format_json_data($format, $data)
 
         case WEBHOOKS_FORMAT_SLACK:
             return ["text" => $data['text']];
+
+        case WEBHOOKS_FORMAT_YESWIKI:
+            // remove not used fields
+            foreach ($data['data'] as $key => $value) {
+                if (!in_array($key, ['id_fiche','bf_titre','id_typeannonce','url','date_maj_fiche'], true)) {
+                    unset($data['data'][$key]);
+                }
+            }
+            $data['base_url'] = $GLOBALS['wiki']->config['base_url'];
+            return $data;
     }
+}
+
+/**
+ * update $webhook['url'], $data and options according to $webhook['format']
+ * @param $webhook
+ * @param array $data
+ * @return array [$url, $options (to merge to current options))]
+ */
+function extract_url_options($webhook, $data)
+{
+    $options = [];
+    switch ($webhook['format']) {
+        case WEBHOOKS_FORMAT_YESWIKI:
+            $query = parse_url($webhook['url'], PHP_URL_QUERY);
+            if (!empty($query)) {
+                parse_str($query, $queries);
+
+                // get bearer
+                if (isset($queries['bearer'])) {
+                    if (!empty($queries['bearer'])) {
+                        $options['headers'] = ['Authorization' => 'Bearer '. $queries['bearer']];
+                    }
+                    unset($queries['bearer']);
+                }
+
+                // refresh url
+                array_walk($queries, function (&$item, $key) {
+                    $item = empty($item)
+                        ? $key
+                        : (
+                            is_array($item)
+                            ? $key.'='.implode(',', $item)
+                            : $key.'='.$item
+                        );
+                });
+                $newQuery = implode('&', $queries);
+                $url = str_replace($query, $newQuery, $webhook['url']);
+            }
+            break;
+        
+        default:
+            $url = $webhook['url'];
+            break;
+    }
+    return [$url, $options];
 }
 
 function webhooks_post_all($data, $action_type)
@@ -186,7 +241,11 @@ function webhooks_post_all($data, $action_type)
         ]]);
 
         $promises = array_map(function ($webhook) use ($client, $data_to_send) {
-            return $client->postAsync($webhook['url'], ['json' => format_json_data($webhook['format'], $data_to_send)]);
+            list($url, $options) = extract_url_options($webhook, $data_to_send);
+            return $client->postAsync(
+                $url,
+                $options + ['json' => format_json_data($webhook['format'], $data_to_send)]
+            );
         }, $webhooks);
 
         try {

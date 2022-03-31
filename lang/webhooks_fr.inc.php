@@ -9,6 +9,7 @@ $GLOBALS['translations'] = array_merge(
         'WEBHOOKS_FORMAT_ACTIVITYPUB' => 'ActivityPub',
         'WEBHOOKS_FORMAT_MATTERMOST' => 'Mattermost',
         'WEBHOOKS_FORMAT_SLACK' => 'Slack',
+        'WEBHOOKS_FORMAT_YESWIKI' => 'YesWiki',
         'WEBHOOKS_URL_PLACEHOLDER' => 'Adresse URL',
         'WEBHOOKS_UPDATE' => 'Mettre à jour',
         'WEBHOOKS_ANONYMOUS_USER' => 'Anonyme',
