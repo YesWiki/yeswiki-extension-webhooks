@@ -6,6 +6,7 @@ use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\ServerException;
 use YesWiki\Bazar\Service\SemanticTransformer;
 use YesWiki\Bazar\Service\FormManager;
+use YesWiki\Core\Service\TemplateEngine;
 
 function get_all_webhooks($form_id=0)
 {
@@ -36,14 +37,20 @@ function is_valid_url($url)
 function get_notification_text($data, $action_type, $user_name)
 {
     $formulaire = baz_valeurs_formulaire($data['id_typeannonce']);
-
+    $tabData = [
+        'data' => $data,
+        'form'=> $formulaire,
+        'user'=> $user_name,
+        'url' => $GLOBALS['wiki']->config['base_url']
+    ];
+    $templateEngine = $GLOBALS['wiki']->getService(TemplateEngine::class);
     switch ($action_type) {
         case WEBHOOKS_ACTION_ADD:
-            return "**AJOUT** Fiche \"{$data['bf_titre']}\" de type \"{$formulaire['bn_label_nature']}\" ajoutée par {$user_name}\n{$GLOBALS['wiki']->config['base_url']}{$data['id_fiche']}";
+            return $templateEngine->render('@webhooks/message-add.twig', $tabData);
         case WEBHOOKS_ACTION_EDIT:
-            return "**MODIFICATION** Fiche \"{$data['bf_titre']}\" de type \"{$formulaire['bn_label_nature']}\" mise à jour par {$user_name}\n{$GLOBALS['wiki']->config['base_url']}{$data['id_fiche']}";
+            return $templateEngine->render('@webhooks/message-edit.twig', $tabData);
         case WEBHOOKS_ACTION_DELETE:
-            return "**SUPPRESSION** Fiche \"{$data['bf_titre']}\" de type \"{$formulaire['bn_label_nature']}\" supprimée par {$user_name}";
+            return $templateEngine->render('@webhooks/message-delete.twig', $tabData);
     }
 }
 
