@@ -43,7 +43,7 @@ function get_notification_text($data, $action_type, $user_name)
         'user'=> $user_name,
         'url' => $GLOBALS['wiki']->config['base_url']
     ];
-    $templateEngine = $GLOBALS['wiki']->getService(TemplateEngine::class);
+    $templateEngine = $GLOBALS['wiki']->services->get(TemplateEngine::class);
     switch ($action_type) {
         case WEBHOOKS_ACTION_ADD:
             return $templateEngine->render('@webhooks/message-add.twig', $tabData);
