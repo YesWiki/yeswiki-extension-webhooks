@@ -2,8 +2,17 @@
 
 namespace YesWiki\Webhooks\Controller;
 
+use GuzzleHttp\Client;
+use GuzzleHttp\Promise;
+use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\ServerException;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use YesWiki\Bazar\Service\EntryManager;
+use YesWiki\Bazar\Service\FormManager;
+use YesWiki\Bazar\Service\SemanticTransformer;
 use YesWiki\Core\Service\AclService;
+use YesWiki\Core\Service\TripleStore;
+use YesWiki\Core\Service\UserManager;
 use YesWiki\Core\YesWikiController;
 use YesWiki\Wiki;
 use Throwable;
@@ -13,13 +22,30 @@ class WebhooksController extends YesWikiController
     protected $entryManager;
     protected $aclService;
     protected $debugMode;
+    protected $formManager;
+    protected $params;
+    protected $semanticTransformer;
+    protected $tripleStore;
+    protected $userManager;
 
     public function __construct(
+        AclService $aclService,
         EntryManager $entryManager,
-        AclService $aclService
+        FormManager $formManager,
+        ParameterBagInterface $params,
+        SemanticTransformer $semanticTransformer,
+        TripleStore $tripleStore,
+        UserManager $userManager,
+        Wiki $wiki
     ) {
-        $this->entryManager = $entryManager;
         $this->aclService = $aclService;
+        $this->entryManager = $entryManager;
+        $this->formManager = $formManager;
+        $this->params = $params;
+        $this->semanticTransformer = $semanticTransformer;
+        $this->tripleStore = $tripleStore;
+        $this->userManager = $userManager;
+        $this->wiki = $wiki;
         $this->debugMode = null;
     }
 
@@ -42,7 +68,7 @@ class WebhooksController extends YesWikiController
                 && $this->entryManager->isEntry($_GET['id_fiche'])) {
                 $entry = $this->entryManager->getOne($_GET['id_fiche']);
                 if (!empty($entry['id_typeannonce'])) {
-                    $this->securedExecution('webhooks_post_all', $entry, WEBHOOKS_ACTION_EDIT);
+                    $this->securedExecution([$this,'webhooks_post_all'], $entry, WEBHOOKS_ACTION_EDIT);
                 }
             }
         }
@@ -89,6 +115,345 @@ class WebhooksController extends YesWikiController
                 $this->wiki->config['toast_class'] = 'alert alert-warning';
                 $this->wiki->config['toast_duration'] = 10000;
             }
+        }
+    }
+
+    public function viewWebhooksForm(): string
+    {
+        if (!empty($_POST['url']) && $this->wiki->UserIsAdmin()) {
+            $this->registerWebhooks();
+        }
+    
+        return $this->render('@webhooks/webhooks_form.twig', [
+            'url' => getAbsoluteUrl(),
+            'webhooks' => $this->get_all_webhooks(),
+            'forms' => $this->formManager->getAll(),
+            'formats' => $this->params->get('webhooks_formats')
+        ]);
+    }
+
+    protected function registerWebhooks()
+    {
+        // First delete all existing triples for this resource
+        $this->tripleStore->delete($this->wiki->GetPageTag(), WEBHOOKS_VOCABULARY_WEBHOOK, null, '', '');
+
+        $numFields = count($_POST['url']);
+
+        for ($i=0; $i<$numFields; $i++) {
+            if ($_POST['url'][$i]) {
+                // Check that URL is valid
+                if (!$this->is_valid_url(trim($_POST['url'][$i]))) {
+                    $this->wiki->exit(_t('WEBHOOKS_ERROR_INVALID_URL'));
+                }
+
+                $formId = ($_POST['form'][$i] !== "comments") ? intval($_POST['form'][$i]) : "comments";
+                // If ActivityPub is selected, check that the selected form(s) are semantic
+                if ($_POST['format'][$i] === WEBHOOKS_FORMAT_ACTIVITYPUB) {
+                    if ($formId === 0) {
+                        // Check that all forms are semantic
+                        foreach ($this->formManager->getAll() as $form) {
+                            if (!$form['bn_sem_type']) {
+                                $this->wiki->exit(_t('WEBHOOKS_ERROR_FORM_NOT_SEMANTIC'));
+                            }
+                        }
+                    } elseif ($formId !== "comments") {
+                        // Check that the selected form is semantic
+                        $form = $this->formManager->getOne($formId);
+                        if (!$form['bn_sem_type']) {
+                            $this->wiki->exit(_t('WEBHOOKS_ERROR_FORM_NOT_SEMANTIC'));
+                        }
+                    }
+                }
+
+                // All good, save webhook
+                $this->tripleStore->create(
+                    $this->wiki->GetPageTag(),
+                    WEBHOOKS_VOCABULARY_WEBHOOK,
+                    json_encode([
+                        'format' => $_POST['format'][$i],
+                        'form' => $formId,
+                        'url' => trim($_POST['url'][$i])
+                    ]),
+                    '',
+                    ''
+                );
+            }
+        }
+
+        // Redirect so that we don't resubmit form on reload
+        header('Location:' . $_SERVER['REQUEST_URI']);
+    }
+
+    public function get_all_webhooks($form_id=0)
+    {
+        // Select all webhooks
+        $all_webhooks = array_map(function ($webhook) {
+            return json_decode($webhook['value'], true);
+        }, $this->tripleStore->getAll('BazaR', WEBHOOKS_VOCABULARY_WEBHOOK, '', ''));
+
+        if ($form_id === 0) {
+            return $all_webhooks;
+        } else {
+            // Return only webhooks which must be called for this form_id
+            return(array_filter($all_webhooks, function ($webhook) use ($form_id) {
+                return(!isset($webhook['form']) || $webhook['form']===0 || $webhook['form']===$form_id);
+            }));
+        }
+    }
+
+    protected function is_valid_url($url)
+    {
+        if (preg_match('/^(http|https):\\/\\/[a-z0-9_]+([\\-\\.]{1}[a-z_0-9]+)*(\\.[_a-z]{2,5})?'.'((:[0-9]{1,5})?\\/.*)?$/i', $url)) {
+            return $url;
+        } else {
+            return false;
+        }
+    }
+
+    protected function get_notification_text($data, $action_type, $user_name)
+    {
+        $idformulaire = $data['id_typeannonce'] ?? '';
+        if (is_array($idformulaire) and count($idformulaire) > 0) {
+            $idformulaire = $idformulaire[0];
+        }
+        if (!empty($idformulaire) && strval($idformulaire) == strval(intval($idformulaire))) {
+            $formulaire = $this->formManager->getOne($idformulaire);
+        } else {
+            $formulaire = ($this->formManager->getAll())[0];
+        }
+        $tabData = [
+            'data' => $data,
+            'form'=> $formulaire,
+            'user'=> $user_name,
+            'url' => $this->params->get('base_url')
+        ];
+        switch ($action_type) {
+            case WEBHOOKS_ACTION_ADD:
+                return $this->render('@webhooks/message-add.twig', $tabData);
+            case WEBHOOKS_ACTION_EDIT:
+                return $this->render('@webhooks/message-edit.twig', $tabData);
+            case WEBHOOKS_ACTION_DELETE:
+                return $this->render('@webhooks/message-delete.twig', $tabData);
+        }
+    }
+
+    protected function format_date_xsd($date)
+    {
+        $date_array = explode(" ", $date);
+        return $date_array[0] . "T" . $date_array[1] . "Z";
+    }
+
+    protected function get_actor_uri($actor)
+    {
+        if ($this->params->has('webhooks_activitypub_default_actor')
+            && !empty($this->params->get('webhooks_activitypub_default_actor'))) {
+            // If a default global-wide actor is defined, use it
+            return $this->params->has('webhooks_activitypub_default_actor');
+        } else {
+            // If no field is marked as an actor, take the current logged-in user
+            if (!$actor) {
+                $user = $this->userManager->getLoggedUser();
+                $actor = $this->wiki->href('', !empty($user['name']) ? $user['name'] : _t('WEBHOOKS_ANONYMOUS_USER'));
+            }
+            // If a base URL is defined in the configs, replace the yeswiki base URL with it
+            if ($this->params->has('webhooks_activitypub_actors_base_url')
+                && !empty($this->params->get('webhooks_activitypub_actors_base_url'))) {
+                $actor = str_replace($this->params->get('base_url'), '', $actor);
+                return $this->params->get('webhooks_activitypub_actors_base_url') . $actor;
+            } else {
+                return $actor;
+            }
+        }
+    }
+
+    protected function format_json_data($format, $data)
+    {
+        switch ($format) {
+            case WEBHOOKS_FORMAT_RAW:
+                return $data;
+
+            case WEBHOOKS_FORMAT_ACTIVITYPUB:
+                $semanticData = $data['data']['semantic'];
+                if (!$semanticData) {
+                    throw new Exception("Webhook error: unable to format data for activitypub (no semantic data defined)");
+                };
+
+                $actorUri = $this->get_actor_uri($semanticData['actor']);
+                $to = [
+                    $actorUri . "/followers",
+                    WEBHOOKS_ACTIVITYPUB_PUBLIC_URI
+                ];
+                $activityPubActions = [
+                    WEBHOOKS_ACTION_ADD => "Create",
+                    WEBHOOKS_ACTION_EDIT => "Update",
+                    WEBHOOKS_ACTION_DELETE => "Delete"
+                ];
+
+                if ($data['action'] === WEBHOOKS_ACTION_DELETE) {
+                    $object = $semanticData['@id'];
+                } else {
+                    $object = array_merge(
+                        [
+                            // In ActivityPub, IDs and types are defined without the @ prefix (go figure ?)
+                            'id' => $semanticData['@id'],
+                            'type' => $semanticData['@type'],
+                            'attributedTo' => $actorUri,
+                            'to' => $to,
+                            // If published or updated are defined as a semantic field, this will be overwritten
+                            'published' => $this->format_date_xsd($data['data']['date_creation_fiche']),
+                        'updated' => $this->format_date_xsd($data['data']['date_maj_fiche'])
+                        ],
+                        $data['data']['semantic']
+                    );
+
+                    // Remove unused keys
+                    unset($object['@context']);
+                    unset($object['@type']);
+                    unset($object['@id']);
+                    unset($object['actor']);
+                }
+
+                return [
+                    "@context" => $semanticData['@context'],
+                    "type" => $activityPubActions[$data['action']],
+                    "to" => $to,
+                    "actor" => $actorUri,
+                    "object" => $object
+                ];
+
+            case WEBHOOKS_FORMAT_MATTERMOST:
+                return [
+                    "username" => $this->params->get('webhooks_bot_name'),
+                    "icon_url" => $this->params->get('webhooks_bot_icon'),
+                    "text" => $data['text']
+                ];
+
+            case WEBHOOKS_FORMAT_SLACK:
+                return ["text" => $data['text']];
+
+            case WEBHOOKS_FORMAT_YESWIKI:
+                // remove not used fields
+                foreach ($data['data'] as $key => $value) {
+                    if (!in_array($key, ['id_fiche','bf_titre','id_typeannonce','url','date_maj_fiche'], true)) {
+                        unset($data['data'][$key]);
+                    }
+                }
+                $data['base_url'] = $this->params->get('base_url');
+                return $data;
+        }
+    }
+
+    /**
+     * update $webhook['url'], $data and options according to $webhook['format']
+     * @param $webhook
+     * @param array $data
+     * @return array [$url, $options (to merge to current options))]
+     */
+    protected function extract_url_options($webhook, $data)
+    {
+        $options = [];
+        switch ($webhook['format']) {
+            case WEBHOOKS_FORMAT_YESWIKI:
+                $query = parse_url($webhook['url'], PHP_URL_QUERY);
+                if (!empty($query)) {
+                    parse_str($query, $queries);
+
+                    // get bearer
+                    if (isset($queries['bearer'])) {
+                        if (!empty($queries['bearer'])) {
+                            $options['headers'] = ['Authorization' => 'Bearer '. $queries['bearer']];
+                        }
+                        unset($queries['bearer']);
+                    }
+
+                    // refresh url
+                    array_walk($queries, function (&$item, $key) {
+                        $item = empty($item)
+                            ? $key
+                            : (
+                                is_array($item)
+                                ? $key.'='.implode(',', $item)
+                                : $key.'='.$item
+                            );
+                    });
+                    $newQuery = implode('&', $queries);
+                    $url = str_replace($query, $newQuery, $webhook['url']);
+                }
+                break;
+            
+            default:
+                $url = $webhook['url'];
+                break;
+        }
+        return [$url, $options];
+    }
+
+    public function webhooks_post_all($data, $action_type)
+    {
+        if (!isset($data['id_typeannonce'])) {
+            throw new Exception("Webhook error: unable to determine the form ID (id_typeannonce is not defined)");
+        }
+
+        $form_id = intval($data['id_typeannonce']);
+
+        $webhooks = $this->get_all_webhooks($form_id);
+
+        if (count($webhooks) > 0) {
+
+            // Add the semantic data if they don't already exist
+
+            if (!isset($data['semantic'])) {
+                // If one of the webhook is using ActivityPub
+                $activityPubWebhooks = array_filter($webhooks, function ($webhook) {
+                    return $webhook['format'] === WEBHOOKS_FORMAT_ACTIVITYPUB;
+                });
+
+                if (count($activityPubWebhooks) > 0) {
+                    $data['semantic'] = $this->semanticTransformer->convertToSemanticData($data['id_typeannonce'], $data);
+                }
+            }
+
+            // Prepare data to send
+
+            $logged_user = $this->userManager->getLoggedUser();
+            $logged_user_name = empty($logged_user) ? _t('WEBHOOKS_ANONYMOUS_USER') : $logged_user['name'];
+
+            $data_to_send = [
+                'action' => $action_type,
+                'user' => $logged_user_name,
+                'text' => $this->get_notification_text($data, $action_type, $logged_user_name),
+                'data_type' => 'bazar',
+                'bazar_form_id' => $form_id,
+                'data' => $data
+            ];
+
+            // Send data to all webhooks
+
+            $client = new Client(['headers' => [
+                'Connection' => 'Close'
+            ]]);
+
+            $promises = array_map(function ($webhook) use ($client, $data_to_send) {
+                list($url, $options) = $this->extract_url_options($webhook, $data_to_send);
+                return $client->postAsync(
+                    $url,
+                    $options + ['json' => $this->format_json_data($webhook['format'], $data_to_send)]
+                );
+            }, $webhooks);
+
+            try {
+                // Wait on all of the requests to complete.
+                // Throws a ConnectException if any of the requests fail
+                Promise\unwrap($promises);
+            } catch (ConnectException $connectException) {
+                // Do nothing on errors...
+            } catch (ServerException $serverException) {
+                // Do nothing on errors...
+            }
+
+            // Wait for the requests to complete, otherwise the code may end before the request is sent
+            // TODO: try to make it work without this command, so that webhooks can be sent asyncronously
+            Promise\settle($promises)->wait();
         }
     }
 }

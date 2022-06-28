@@ -36,7 +36,7 @@ class __DeletePageHandler extends YesWikiHandler
                         if ($csrfTokenManager->isTokenValid($token)) {
                             $webhooksController = $this->getService(WebhooksController::class);
                             try {
-                                $webhooksController->securedExecution('webhooks_post_all', $data, WEBHOOKS_ACTION_DELETE);
+                                $webhooksController->securedExecution([$webhooksController,'webhooks_post_all'], $data, WEBHOOKS_ACTION_DELETE);
                             } catch (Throwable $th) {
                                 throw new Exception($th->getMessage() .
                                     ' <form action="' .$this->wiki->Href('deletepage', '', [
@@ -56,7 +56,7 @@ class __DeletePageHandler extends YesWikiHandler
                     // TODO remove this part for ectoplasme (v5), kept only for backward-compatibility in doryphore
                     $webhooksController = $this->getService(WebhooksController::class);
                     try {
-                        $webhooksController->securedExecution('webhooks_post_all', $data, WEBHOOKS_ACTION_DELETE);
+                        $webhooksController->securedExecution([$webhooksController,'webhooks_post_all'], $data, WEBHOOKS_ACTION_DELETE);
                     } catch (Throwable $th) {
                         throw new Exception($th->getMessage() .
                             '<a href="'.$this->wiki->Href('deletepage', '', [

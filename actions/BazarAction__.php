@@ -23,6 +23,7 @@ class BazarAction__ extends YesWikiAction
     {
         $entryManager = $this->getService(EntryManager::class);
         $tripleStore = $this->getService(TripleStore::class);
+        $webhooksController = $this->getService(WebhooksController::class);
 
         $view = $this->arguments[BazarAction::VARIABLE_VOIR];
         $action = $this->arguments[BazarAction::VARIABLE_ACTION];
@@ -31,7 +32,7 @@ class BazarAction__ extends YesWikiAction
             // Display webhooks form before the forms list
             case BazarAction::VOIR_FORMULAIRE:
                 if (!isset($_GET['action'])) {
-                    return webhooks_formulaire();
+                    return $webhooksController->viewWebhooksForm();
                 }
                 break;
 
@@ -46,7 +47,7 @@ class BazarAction__ extends YesWikiAction
                                 $fiche = $entryManager->getOne($_GET['id_fiche']);
                                 if (!empty($fiche['id_typeannonce'])) {
                                     $webhooksController = $this->getService(WebhooksController::class);
-                                    $webhooksController->securedExecution('webhooks_post_all', $fiche, WEBHOOKS_ACTION_ADD);
+                                    $webhooksController->securedExecution([$webhooksController,'webhooks_post_all'], $fiche, WEBHOOKS_ACTION_ADD);
                                 }
                                 $GLOBALS['add_webhook_already_called'] = true;
                                 if (!empty($this->arguments['redirecturl'])) {

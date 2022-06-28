@@ -2,9 +2,6 @@
 
 define('WEBHOOKS_PATH', 'tools/webhooks/');
 
-require_once WEBHOOKS_PATH.'vendor/autoload.php';
-require_once WEBHOOKS_PATH.'libs/functions.php';
-
 define('WEBHOOKS_ACTION_ADD', 'add');
 define('WEBHOOKS_ACTION_EDIT', 'edit');
 define('WEBHOOKS_ACTION_DELETE', 'delete');
