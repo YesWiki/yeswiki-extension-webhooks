@@ -2,6 +2,7 @@
 
 namespace YesWiki\Webhooks\Controller;
 
+use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Promise;
 use GuzzleHttp\Exception\ConnectException;
