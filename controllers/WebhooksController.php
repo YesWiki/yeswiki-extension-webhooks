@@ -430,9 +430,12 @@ class WebhooksController extends YesWikiController
 
             // Send data to all webhooks
 
-            $client = new Client(['headers' => [
-                'Connection' => 'Close'
-            ]]);
+            $client = new Client([
+                'headers' => [
+                    'Connection' => 'Close'
+                ],
+                'timeout' => 4 // to prevent 504 error if webhooks is not reachable : timeout 3s
+            ]);
 
             $promises = array_map(function ($webhook) use ($client, $data_to_send) {
                 list($url, $options) = $this->extract_url_options($webhook, $data_to_send);
