@@ -20,7 +20,6 @@
                     {% for key,form in forms %}
                         <option value="{{ key }}" {{ (webhooks[i] is defined and (webhooks[i].form)|number_format is same as key) ? "selected" : "" }}>{{ form.bn_label_nature }}</option>
                     {% endfor %}
-                    <option value="comments" {{ (webhooks[i] is defined and webhooks[i].form == 'comments') ? "selected" : "" }}>{{ _t('WEBHOOKS_COMMENTS') }}</option>
                 </select>
             </div>
             <div class="col-sm-8">

@@ -147,7 +147,7 @@ class WebhooksController extends YesWikiController
                     $this->wiki->exit(_t('WEBHOOKS_ERROR_INVALID_URL'));
                 }
 
-                $formId = ($_POST['form'][$i] !== "comments") ? intval($_POST['form'][$i]) : "comments";
+                $formId = intval($_POST['form'][$i]);
                 // If ActivityPub is selected, check that the selected form(s) are semantic
                 if ($_POST['format'][$i] === WEBHOOKS_FORMAT_ACTIVITYPUB) {
                     if ($formId === 0) {
@@ -157,7 +157,7 @@ class WebhooksController extends YesWikiController
                                 $this->wiki->exit(_t('WEBHOOKS_ERROR_FORM_NOT_SEMANTIC'));
                             }
                         }
-                    } elseif ($formId !== "comments") {
+                    } else {
                         // Check that the selected form is semantic
                         $form = $this->formManager->getOne($formId);
                         if (!$form['bn_sem_type']) {
