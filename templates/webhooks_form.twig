@@ -17,8 +17,8 @@
             <div class="col-sm-2">
                 <select class="form-control" name="form[]" {{ (webhooks[i] is defined and not userIsAdmin) ? 'disabled' : '' }}>
                     <option value="0">{{ _t('WEBHOOKS_FORMS_ALL') }}</option>
-                    {% for key,form in forms %}
-                        <option value="{{ key }}" {{ (webhooks[i] is defined and (webhooks[i].form)|number_format is same as key) ? "selected" : "" }}>{{ form.bn_label_nature }}</option>
+                    {% for form in forms %}
+                        <option value="{{ form.bn_id_nature }}" {{ (webhooks[i] is defined and (webhooks[i].form)|number_format is same as form.bn_id_nature) ? "selected" : "" }}>{{ form.bn_label_nature }}</option>
                     {% endfor %}
                 </select>
             </div>
