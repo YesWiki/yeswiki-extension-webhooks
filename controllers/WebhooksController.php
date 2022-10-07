@@ -14,6 +14,7 @@ use YesWiki\Bazar\Service\FormManager;
 use YesWiki\Bazar\Service\SemanticTransformer;
 use YesWiki\Core\Entity\Event;
 use YesWiki\Core\Service\AclService;
+use YesWiki\Core\Service\EventDispatcher;
 use YesWiki\Core\Service\TripleStore;
 use YesWiki\Core\Service\UserManager;
 use YesWiki\Core\YesWikiController;
@@ -105,6 +106,11 @@ class WebhooksControllerCommons extends YesWikiController
         $this->debugMode = null;
     }
 
+    protected function showComments(): bool
+    {
+        return $this->wiki->services->has(EventDispatcher::class);
+    }
+
     private function getDebugMode(): bool
     {
         if (is_null($this->debugMode)) {
@@ -184,7 +190,8 @@ class WebhooksControllerCommons extends YesWikiController
             'url' => getAbsoluteUrl(),
             'webhooks' => $this->get_all_webhooks(),
             'forms' => $this->formManager->getAll(),
-            'formats' => $this->params->get('webhooks_formats')
+            'formats' => $this->params->get('webhooks_formats'),
+            'showComment' => $this->showComments()
         ]);
     }
 
