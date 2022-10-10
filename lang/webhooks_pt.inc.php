@@ -14,4 +14,5 @@ return [
     'WEBHOOKS_ERROR_INVALID_URL' => 'O link fornecido não é válido',
     'WEBHOOKS_ERROR_FORM_NOT_SEMANTIC' => 'Um ou vários formulários selecionados não estão semanticamente definidos, o formato ActivityPub não pode ser usado',
     // 'WEBHOOKS_VISIBLE_ONLY_FOR_ADMINS' => 'Visible uniquement pour les administrateurs',
+    // 'WEBHOOKS_COMMENTS' => "Commentaires",
 ];

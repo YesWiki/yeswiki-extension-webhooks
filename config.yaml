@@ -18,5 +18,7 @@ services:
     public: true
 
   # Allows to use controllers as services
-  YesWiki\Webhooks\Controller\:
-    resource: 'controllers/*'
+  YesWiki\Webhooks\Controller\WebhooksController:
+    class: YesWiki\Webhooks\Controller\WebhooksController
+    tags:
+      - { name: yeswiki.event_subscriber }

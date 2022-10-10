@@ -8,21 +8,77 @@ use GuzzleHttp\Promise;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\ServerException;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use YesWiki\Bazar\Service\EntryManager;
 use YesWiki\Bazar\Service\FormManager;
 use YesWiki\Bazar\Service\SemanticTransformer;
+use YesWiki\Core\Entity\Event;
 use YesWiki\Core\Service\AclService;
+use YesWiki\Core\Service\EventDispatcher;
 use YesWiki\Core\Service\TripleStore;
 use YesWiki\Core\Service\UserManager;
 use YesWiki\Core\YesWikiController;
 use YesWiki\Wiki;
 use Throwable;
 
-class WebhooksController extends YesWikiController
+// Check the interface exists before trying to use it
+if (interface_exists(EventSubscriberInterface::class)) {
+    class WebhooksController extends WebhooksControllerCommons implements EventSubscriberInterface
+    {
+        public static function getSubscribedEvents()
+        {
+            return [
+                WebhooksControllerCommons::WEBHOOKS_ACTION_CREATE_COMMENT => 'sendCommentCreatedWebHook',
+                WebhooksControllerCommons::WEBHOOKS_ACTION_MODIFY_COMMENT => 'sendCommentModifiedWebHook',
+                WebhooksControllerCommons::WEBHOOKS_ACTION_DELETE_COMMENT => 'sendCommentDeletedWebHook'
+            ];
+        }
+
+        /**
+         * @param Event $event
+         */
+        public function sendCommentCreatedWebHook($event)
+        {
+            // array
+            $data = $event->getData();
+            $this->securedExecution([$this,'webhooks_post_all'], $data, self::WEBHOOKS_ACTION_CREATE_COMMENT);
+        }
+
+        /**
+         * @param Event $event
+         */
+        public function sendCommentModifiedWebHook($event)
+        {
+            // array
+            $data = $event->getData();
+            $this->securedExecution([$this,'webhooks_post_all'], $data, self::WEBHOOKS_ACTION_MODIFY_COMMENT);
+        }
+
+        /**
+         * @param Event $event
+         */
+        public function sendCommentDeletedWebHook($event)
+        {
+            // array
+            $data = $event->getData();
+            $this->securedExecution([$this,'webhooks_post_all'], $data, self::WEBHOOKS_ACTION_DELETE_COMMENT);
+        }
+    }
+} else {
+    class WebhooksController extends WebhooksControllerCommons
+    {
+    }
+}
+
+class WebhooksControllerCommons extends YesWikiController
 {
-    protected $entryManager;
+    public const WEBHOOKS_ACTION_CREATE_COMMENT = 'comments.create';
+    public const WEBHOOKS_ACTION_MODIFY_COMMENT = 'comments.modify';
+    public const WEBHOOKS_ACTION_DELETE_COMMENT = 'comments.delete';
+
     protected $aclService;
     protected $debugMode;
+    protected $entryManager;
     protected $formManager;
     protected $params;
     protected $semanticTransformer;
@@ -50,6 +106,11 @@ class WebhooksController extends YesWikiController
         $this->debugMode = null;
     }
 
+    protected function showComments(): bool
+    {
+        return $this->wiki->services->has(EventDispatcher::class);
+    }
+
     private function getDebugMode(): bool
     {
         if (is_null($this->debugMode)) {
@@ -64,7 +125,7 @@ class WebhooksController extends YesWikiController
             && isset($_GET['action']) && $_GET['action'] === 'voir_fiche'
             && !empty($_GET['id_fiche']) && preg_match("/^". WN_CAMEL_CASE_EVOLVED ."$/m", $_GET['id_fiche'])
             && isset($_GET['message']) && $_GET['message'] === 'modif_ok'
-            ) {
+        ) {
             if ($this->aclService->hasAccess('write', $_GET['id_fiche'])
                 && $this->entryManager->isEntry($_GET['id_fiche'])) {
                 $entry = $this->entryManager->getOne($_GET['id_fiche']);
@@ -124,12 +185,13 @@ class WebhooksController extends YesWikiController
         if (!empty($_POST['url']) && $this->wiki->UserIsAdmin()) {
             $this->registerWebhooks();
         }
-    
+
         return $this->render('@webhooks/webhooks_form.twig', [
             'url' => getAbsoluteUrl(),
             'webhooks' => $this->get_all_webhooks(),
             'forms' => $this->formManager->getAll(),
-            'formats' => $this->params->get('webhooks_formats')
+            'formats' => $this->params->get('webhooks_formats'),
+            'showComment' => $this->showComments()
         ]);
     }
 
@@ -147,7 +209,7 @@ class WebhooksController extends YesWikiController
                     $this->wiki->exit(_t('WEBHOOKS_ERROR_INVALID_URL'));
                 }
 
-                $formId = intval($_POST['form'][$i]);
+                $formId = ($_POST['form'][$i] !== "comments") ? intval($_POST['form'][$i]) : "comments";
                 // If ActivityPub is selected, check that the selected form(s) are semantic
                 if ($_POST['format'][$i] === WEBHOOKS_FORMAT_ACTIVITYPUB) {
                     if ($formId === 0) {
@@ -157,7 +219,7 @@ class WebhooksController extends YesWikiController
                                 $this->wiki->exit(_t('WEBHOOKS_ERROR_FORM_NOT_SEMANTIC'));
                             }
                         }
-                    } else {
+                    } elseif ($formId !== "comments") {
                         // Check that the selected form is semantic
                         $form = $this->formManager->getOne($formId);
                         if (!$form['bn_sem_type']) {
@@ -197,7 +259,7 @@ class WebhooksController extends YesWikiController
         } else {
             // Return only webhooks which must be called for this form_id
             return(array_filter($all_webhooks, function ($webhook) use ($form_id) {
-                return(!isset($webhook['form']) || $webhook['form']===0 || $webhook['form']===$form_id);
+                return(!isset($webhook['form']) || ($form_id != "comments" && $webhook['form']===0) || $webhook['form']===$form_id);
             }));
         }
     }
@@ -213,14 +275,23 @@ class WebhooksController extends YesWikiController
 
     protected function get_notification_text($data, $action_type, $user_name)
     {
-        $idformulaire = $data['id_typeannonce'] ?? '';
-        if (is_array($idformulaire) and count($idformulaire) > 0) {
-            $idformulaire = $idformulaire[0];
-        }
-        if (!empty($idformulaire) && strval($idformulaire) == strval(intval($idformulaire))) {
-            $formulaire = $this->formManager->getOne($idformulaire);
-        } else {
-            $formulaire = ($this->formManager->getAll())[0];
+        switch ($action_type) {
+            case self::WEBHOOKS_ACTION_CREATE_COMMENT:
+            case self::WEBHOOKS_ACTION_MODIFY_COMMENT:
+            case self::WEBHOOKS_ACTION_DELETE_COMMENT:
+                $formulaire = "";
+                break;
+            default:
+                $idformulaire = $data['id_typeannonce'] ?? '';
+                if (is_array($idformulaire) and count($idformulaire) > 0) {
+                    $idformulaire = $idformulaire[0];
+                }
+                if (!empty($idformulaire) && strval($idformulaire) == strval(intval($idformulaire))) {
+                    $formulaire = $this->formManager->getOne($idformulaire);
+                } else {
+                    $formulaire = ($this->formManager->getAll())[0];
+                }
+                break;
         }
         $tabData = [
             'data' => $data,
@@ -235,6 +306,12 @@ class WebhooksController extends YesWikiController
                 return $this->render('@webhooks/message-edit.twig', $tabData);
             case WEBHOOKS_ACTION_DELETE:
                 return $this->render('@webhooks/message-delete.twig', $tabData);
+            case self::WEBHOOKS_ACTION_CREATE_COMMENT:
+                return $this->render('@webhooks/message-create-comment.twig', $tabData);
+            case self::WEBHOOKS_ACTION_MODIFY_COMMENT:
+                return $this->render('@webhooks/message-modify-comment.twig', $tabData);
+            case self::WEBHOOKS_ACTION_DELETE_COMMENT:
+                return $this->render('@webhooks/message-delete-comment.twig', $tabData);
         }
     }
 
@@ -381,7 +458,7 @@ class WebhooksController extends YesWikiController
                     $url = str_replace($query, $newQuery, $webhook['url']);
                 }
                 break;
-            
+
             default:
                 $url = $webhook['url'];
                 break;
@@ -391,16 +468,24 @@ class WebhooksController extends YesWikiController
 
     public function webhooks_post_all($data, $action_type)
     {
-        if (!isset($data['id_typeannonce'])) {
-            throw new Exception("Webhook error: unable to determine the form ID (id_typeannonce is not defined)");
-        }
+        switch ($action_type) {
+            case self::WEBHOOKS_ACTION_CREATE_COMMENT:
+            case self::WEBHOOKS_ACTION_MODIFY_COMMENT:
+            case self::WEBHOOKS_ACTION_DELETE_COMMENT:
+                $form_id = "comments";
+                break;
+            default:
+                if (!isset($data['id_typeannonce'])) {
+                    throw new Exception("Webhook error: unable to determine the form ID (id_typeannonce is not defined)");
+                }
 
-        $form_id = intval($data['id_typeannonce']);
+                $form_id = intval($data['id_typeannonce']);
+                break;
+        }
 
         $webhooks = $this->get_all_webhooks($form_id);
 
         if (count($webhooks) > 0) {
-
             // Add the semantic data if they don't already exist
 
             if (!isset($data['semantic'])) {
