@@ -17,4 +17,5 @@ return [
     'WEBHOOKS_VISIBLE_ONLY_FOR_ADMINS' => 'Visible uniquement pour les administrateurs',
     'WEBHOOKS_POST_ERROR' => "Une action d'arrière-plan ne s'est pas déroulée comme prévue.\nVous pouvez prévenir les administrateurs pour les aider à maintenir ce site en leur donnant cette information :\n erreur exécutant '{function}' dans '{method}'.",
     'WEBHOOKS_FORCE_DELETE' => "Forcer la suppression de la fiche sans envoyer de webhook !",
+    'WEBHOOKS_COMMENTS' => "Commentaires",
 ];
