@@ -36,29 +36,6 @@ class BazarAction__ extends YesWikiAction
                 }
                 break;
 
-            // Call webhook on addition
-            case BazarAction::VOIR_CONSULTER:
-                switch ($action) {
-                    case BazarAction::ACTION_ENTRY_VIEW:
-                        if (isset($_GET['message']) && $_GET['message']==='ajout_ok') {
-                            // We set this condition because otherwise the page is called twice and the webhook is sent twice
-                            // TODO: Understand why the YesWiki core calls this kind of page twice (JD : see LinkTraking)
-                            if (!isset($GLOBALS['add_webhook_already_called'])) {
-                                $fiche = $entryManager->getOne($_GET['id_fiche']);
-                                if (!empty($fiche['id_typeannonce'])) {
-                                    $webhooksController = $this->getService(WebhooksController::class);
-                                    $webhooksController->securedExecution([$webhooksController,'webhooks_post_all'], $fiche, WEBHOOKS_ACTION_ADD);
-                                }
-                                $GLOBALS['add_webhook_already_called'] = true;
-                                if (!empty($this->arguments['redirecturl'])) {
-                                    header('Location: ' . $this->arguments['redirecturl']);
-                                    exit;
-                                }
-                            }
-                        }
-                }
-                break;
-
             // Incoming webhook for tests
             case WEBHOOKS_VUE_TEST:
                 $tripleStore->create(

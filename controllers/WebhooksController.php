@@ -28,9 +28,12 @@ if (interface_exists(EventSubscriberInterface::class)) {
         public static function getSubscribedEvents()
         {
             return [
-                WebhooksControllerCommons::WEBHOOKS_ACTION_CREATE_COMMENT => 'sendCommentCreatedWebHook',
-                WebhooksControllerCommons::WEBHOOKS_ACTION_MODIFY_COMMENT => 'sendCommentModifiedWebHook',
-                WebhooksControllerCommons::WEBHOOKS_ACTION_DELETE_COMMENT => 'sendCommentDeletedWebHook'
+                WebhooksControllerCommons::WEBHOOKS_ACTION_CREATED_COMMENT => 'sendCommentCreatedWebHook',
+                WebhooksControllerCommons::WEBHOOKS_ACTION_MODIFIED_COMMENT => 'sendCommentModifiedWebHook',
+                WebhooksControllerCommons::WEBHOOKS_ACTION_DELETED_COMMENT => 'sendCommentDeletedWebHook',
+                WebhooksControllerCommons::WEBHOOKS_ACTION_CREATED_ENTRY => 'sendEntryCreatedWebHook',
+                WebhooksControllerCommons::WEBHOOKS_ACTION_MODIFIED_ENTRY => 'sendEntryModifiedWebHook',
+                WebhooksControllerCommons::WEBHOOKS_ACTION_DELETED_ENTRY => 'sendEntryDeletedWebHook'
             ];
         }
 
@@ -41,7 +44,7 @@ if (interface_exists(EventSubscriberInterface::class)) {
         {
             // array
             $data = $event->getData();
-            $this->securedExecution([$this,'webhooks_post_all'], $data, self::WEBHOOKS_ACTION_CREATE_COMMENT);
+            $this->securedExecution([$this,'webhooks_post_all'], ['comment'=>$data['data']], self::WEBHOOKS_ACTION_CREATED_COMMENT);
         }
 
         /**
@@ -51,7 +54,7 @@ if (interface_exists(EventSubscriberInterface::class)) {
         {
             // array
             $data = $event->getData();
-            $this->securedExecution([$this,'webhooks_post_all'], $data, self::WEBHOOKS_ACTION_MODIFY_COMMENT);
+            $this->securedExecution([$this,'webhooks_post_all'], ['comment'=>$data['data']], self::WEBHOOKS_ACTION_MODIFIED_COMMENT);
         }
 
         /**
@@ -61,7 +64,41 @@ if (interface_exists(EventSubscriberInterface::class)) {
         {
             // array
             $data = $event->getData();
-            $this->securedExecution([$this,'webhooks_post_all'], $data, self::WEBHOOKS_ACTION_DELETE_COMMENT);
+            $this->securedExecution([$this,'webhooks_post_all'], [
+                'comment' => $data['data'],
+                'associatedComments' => $data['data']['associatedComments'],
+                'parentPage' => $data['data']['parentPage']
+            ], self::WEBHOOKS_ACTION_DELETED_COMMENT);
+        }
+
+        /**
+         * @param Event $event
+         */
+        public function sendEntryCreatedWebHook($event)
+        {
+            // array
+            $data = $event->getData();
+            $this->securedExecution([$this,'webhooks_post_all'], $data['data'], WEBHOOKS_ACTION_ADD);
+        }
+
+        /**
+         * @param Event $event
+         */
+        public function sendEntryModifiedWebHook($event)
+        {
+            // array
+            $data = $event->getData();
+            $this->securedExecution([$this,'webhooks_post_all'], $data['data'], WEBHOOKS_ACTION_EDIT);
+        }
+
+        /**
+         * @param Event $event
+         */
+        public function sendEntryDeletedWebHook($event)
+        {
+            // array
+            $data = $event->getData();
+            $this->securedExecution([$this,'webhooks_post_all'], $data['data'], WEBHOOKS_ACTION_DELETE);
         }
     }
 } else {
@@ -72,9 +109,12 @@ if (interface_exists(EventSubscriberInterface::class)) {
 
 class WebhooksControllerCommons extends YesWikiController
 {
-    public const WEBHOOKS_ACTION_CREATE_COMMENT = 'comments.create';
-    public const WEBHOOKS_ACTION_MODIFY_COMMENT = 'comments.modify';
-    public const WEBHOOKS_ACTION_DELETE_COMMENT = 'comments.delete';
+    public const WEBHOOKS_ACTION_CREATED_COMMENT = 'comment.created';
+    public const WEBHOOKS_ACTION_MODIFIED_COMMENT = 'comment.updated';
+    public const WEBHOOKS_ACTION_DELETED_COMMENT = 'comment.deleted';
+    public const WEBHOOKS_ACTION_CREATED_ENTRY = 'entry.created';
+    public const WEBHOOKS_ACTION_MODIFIED_ENTRY = 'entry.updated';
+    public const WEBHOOKS_ACTION_DELETED_ENTRY = 'entry.deleted';
 
     protected $aclService;
     protected $debugMode;
@@ -117,23 +157,6 @@ class WebhooksControllerCommons extends YesWikiController
             $this->debugMode = ($this->wiki->GetConfigValue('debug')=='yes');
         }
         return $this->debugMode ;
-    }
-
-    public function sendEditWebhookIfNeeded()
-    {
-        if (isset($_GET['vue']) && $_GET['vue'] === 'consulter'
-            && isset($_GET['action']) && $_GET['action'] === 'voir_fiche'
-            && !empty($_GET['id_fiche']) && preg_match("/^". WN_CAMEL_CASE_EVOLVED ."$/m", $_GET['id_fiche'])
-            && isset($_GET['message']) && $_GET['message'] === 'modif_ok'
-        ) {
-            if ($this->aclService->hasAccess('write', $_GET['id_fiche'])
-                && $this->entryManager->isEntry($_GET['id_fiche'])) {
-                $entry = $this->entryManager->getOne($_GET['id_fiche']);
-                if (!empty($entry['id_typeannonce'])) {
-                    $this->securedExecution([$this,'webhooks_post_all'], $entry, WEBHOOKS_ACTION_EDIT);
-                }
-            }
-        }
     }
 
     /**
@@ -276,9 +299,9 @@ class WebhooksControllerCommons extends YesWikiController
     protected function get_notification_text($data, $action_type, $user_name)
     {
         switch ($action_type) {
-            case self::WEBHOOKS_ACTION_CREATE_COMMENT:
-            case self::WEBHOOKS_ACTION_MODIFY_COMMENT:
-            case self::WEBHOOKS_ACTION_DELETE_COMMENT:
+            case self::WEBHOOKS_ACTION_CREATED_COMMENT:
+            case self::WEBHOOKS_ACTION_MODIFIED_COMMENT:
+            case self::WEBHOOKS_ACTION_DELETED_COMMENT:
                 $formulaire = "";
                 break;
             default:
@@ -306,11 +329,11 @@ class WebhooksControllerCommons extends YesWikiController
                 return $this->render('@webhooks/message-edit.twig', $tabData);
             case WEBHOOKS_ACTION_DELETE:
                 return $this->render('@webhooks/message-delete.twig', $tabData);
-            case self::WEBHOOKS_ACTION_CREATE_COMMENT:
+            case self::WEBHOOKS_ACTION_CREATED_COMMENT:
                 return $this->render('@webhooks/message-create-comment.twig', $tabData);
-            case self::WEBHOOKS_ACTION_MODIFY_COMMENT:
+            case self::WEBHOOKS_ACTION_MODIFIED_COMMENT:
                 return $this->render('@webhooks/message-modify-comment.twig', $tabData);
-            case self::WEBHOOKS_ACTION_DELETE_COMMENT:
+            case self::WEBHOOKS_ACTION_DELETED_COMMENT:
                 return $this->render('@webhooks/message-delete-comment.twig', $tabData);
         }
     }
@@ -469,9 +492,9 @@ class WebhooksControllerCommons extends YesWikiController
     public function webhooks_post_all($data, $action_type)
     {
         switch ($action_type) {
-            case self::WEBHOOKS_ACTION_CREATE_COMMENT:
-            case self::WEBHOOKS_ACTION_MODIFY_COMMENT:
-            case self::WEBHOOKS_ACTION_DELETE_COMMENT:
+            case self::WEBHOOKS_ACTION_CREATED_COMMENT:
+            case self::WEBHOOKS_ACTION_MODIFIED_COMMENT:
+            case self::WEBHOOKS_ACTION_DELETED_COMMENT:
                 $form_id = "comments";
                 break;
             default:
