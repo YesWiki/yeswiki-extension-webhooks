@@ -10,5 +10,8 @@
         },
         "platform-check": true,
         "sort-packages": true
+    },
+    "conflict": {
+        "guzzlehttp/psr": "<1.9.1"
     }
 }
