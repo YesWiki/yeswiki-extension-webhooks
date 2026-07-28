@@ -554,18 +554,19 @@ class WebhooksControllerCommons extends YesWikiController
             }, $webhooks);
 
             try {
-                // Wait on all of the requests to complete.
-                // Throws a ConnectException if any of the requests fail
-                Promise\unwrap($promises);
-            } catch (ConnectException $connectException) {
-                // Do nothing on errors...
-            } catch (ServerException $serverException) {
-                // Do nothing on errors...
+                Promise\Utils::unwrap($promises);
+                error_log('[WEBHOOKS DEBUG] Envoi webhook terminé');
+            } catch (ConnectException $e) {
+                error_log('[WEBHOOKS DEBUG] ConnectException: ' . $e->getMessage());
+            } catch (ServerException $e) {
+                error_log('[WEBHOOKS DEBUG] ServerException: ' . $e->getMessage());
+            } catch (\Throwable $e) {
+                error_log('[WEBHOOKS DEBUG] Exception générale: ' . $e->getMessage());
             }
 
             // Wait for the requests to complete, otherwise the code may end before the request is sent
             // TODO: try to make it work without this command, so that webhooks can be sent asyncronously
-            Promise\settle($promises)->wait();
+            Promise\Utils::settle($promises)->wait();
         }
     }
 }
