@@ -1,17 +1,19 @@
 {
-  "require": {
-    "php": "^7.3 || ^8.0",
-    "guzzlehttp/guzzle": "^6.3||^7.0"
-  },
-  "config": {
-    "optimize-autoloader": true,
-    "platform": {
-      "php": "7.3.0"
+    "name": "yeswiki/extension-webhooks",
+    "type": "yeswiki-extension",
+    "require": {
+        "php": "^7.3 || ^8.0",
+        "guzzlehttp/guzzle": "^6.3||^7.0"
     },
-    "platform-check": true,
-    "sort-packages": true
-  },
-  "conflict": {
-    "guzzlehttp/psr": "<1.9.1"
-  }
+    "config": {
+        "optimize-autoloader": true,
+        "platform": {
+            "php": "7.3.0"
+        },
+        "platform-check": true,
+        "sort-packages": true
+    },
+    "conflict": {
+        "guzzlehttp/psr": "<1.9.1"
+    }
 }
