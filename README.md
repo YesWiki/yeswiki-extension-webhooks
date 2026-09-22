@@ -1,96 +1,48 @@
 # yeswiki-extension-webhooks
-Outgoing webhooks at each addition/modification/deletion of a Bazar item.
 
-## Installation
+ - [English](#english)
+ - [Français](#français)
 
-Put this repository inside the `/tools/webhooks` directory of YesWiki.
+## English
 
-## Configuration
+[YesWiki](https://yeswiki.net/) extension. Sends a webhook on every bazar entry addition, change or deletion.
 
-Go to the BazaR main page, at the bottom you have a Webhooks section.
+### Authors
 
-- On the left you have a dropdown menu to select the format: `Raw`, `Mattermost`, `Slack`
-- In the middle, you have a dropdown menu to select for which Bazar items the webhooks will be called. By default, the webhooks will be called on the addition/modification/deletion of all Bazar items.
-- On the right you must enter the URL of the webhook to call
+ - all contributors indicated on this page : <https://github.com/YesWiki/yeswiki-extension-webhooks/graphs/contributors>
 
-Every time you click on Update, a new row will be added. If you wish to delete a webhook, just use a blank URL and it will be removed on update.
+### Install
 
-### Mattermost
+In page `GererMisesAJour` on your YesWiki website, search extension `webhooks` and install it.
 
-To integrate the webhook with a Mattermost chatroom, follow this guideline:
+### Usage
 
-- Log into your Mattermost chatroom as an admin
-- On the main menu, click on "Integration" (you only see it if you're an admin)
-- Choose "Incoming webhooks"
-- Create a webhook with the configurations you wish to use
-- On the YesWiki BazaR page, choose "Mattermost" and copy the URL provided by Mattermost
+Usage help is described in `http://example.com/?doc/#tools/webhooks/en/README.md` (replacing `http://example.com/?` by the `baseUrl` of your wiki). The same file can be found also here : https://github.com/YesWiki/yeswiki-extension-webhooks/blob/doryphore/docs/en/README.md
 
-You can define `webhooks_bot_name` and `webhooks_bot_icon` in `wakka.config.php` if you want to change the look of the bot which will post on Mattermost (you must allow this in the Mattermost configurations).
+### Warranty
 
-### Slack
+Like written in the licence file, there is no warranty on usage of this software. Refer to licence file for details.
+Developpers of this extension can not be responsible of consequences of the usage of this extension.
 
-To let Slack handle an incoming webhook, follow the [guide](https://api.slack.com/incoming-webhooks) here.
+----
 
-On the YesWiki BazaR page, choose "Slack" and copy the URL provided by Slack.
+## Français
 
-### Raw
+Extension [YesWiki](https://yeswiki.net/). Envoie un webhook à chaque ajout, modification ou suppression d'une fiche bazar.
 
-If you choose the "Raw" format, all informations about the given Bazar item will be POSTed to the given URLs in a JSON format.
+### Auteurs
 
-The data will be sent formatted like this:
+ - tous les contributeurs et toutes les contributrices indiqués sur cette page : <https://github.com/YesWiki/yeswiki-extension-webhooks/graphs/contributors>
 
-- `action`: action type (add/edit/delete)
-- `user`: name of the user who performed the action
-- `text`: formatted text describing the action done (this is what is sent to Mattermost/Slack)
-- `data_type`: for now the value will be always "bazar". In the future we may support regular pages.
-- `bazar_form_id`: the ID of the Bazar item
-- `data`: all the data of the Bazar item
+### Installation
 
-### ActivityPub
+Dans la page `GererMisesAJour` de votre YesWiki, recherchez l'extension `webhooks` et installez-la.
 
-The ActivityPub format only works if the Bazar objects are semantically defined. Please see [the documentation](https://yeswiki.net/documentation/?BazarSemantique) (in French) to know how to do that. You must use `https://www.w3.org/ns/activitystreams` as the main context, but other contexts can be added as well.
+### Utilisation
 
-The data will be formatted like this:
+L'aide sur l'utilisation peut être trouvée sur `http://example.com/?doc/#tools/webhooks/fr/README.md` (en remplaçant `http://example.com/?` par `baseUrl` de votre wiki). Le même fichier peut aussi être trouvé ici : https://github.com/YesWiki/yeswiki-extension-webhooks/blob/doryphore/docs/fr/README.md
 
-```json
-{
-  "@context": "https://www.w3.org/ns/activitystreams",
-  "type":"Create",
-  "to": [
-    "http://localhost/?WikiAdmin/followers",
-    "https://www.w3.org/ns/activitystreams#Public"
-  ],
-  "actor": "http://localhost/?WikiAdmin",
-  "object": { 
-    "id": "http://localhost/?MyComment",
-    "type": "Note",
-    "attributedTo": "http://localhost/?WikiAdmin",
-    "to": [
-      "http://localhost/?WikiAdmin/followers",
-      "https://www.w3.org/ns/activitystreams#Public"
-    ],
-    "title":"My comment",
-    "content":"Thank you for reading my comment",
-    "published":"2019-10-21T14:56:32Z",
-    "updated":"2019-10-21T14:56:32Z"
-  }
-}
-```
+### Garantie
 
-For the `Delete` activity, only the object URI is sent.
-
-The `published` and `updated` fields are set automatically, unless you mark a field explicitely with this context.
-
-#### ActivityPub actors
-By default, the actor posting the activity will be the logged-in user. You can also mark a field with the context `https://www.w3.org/ns/activitystreams#author` to override this value.
-
-You can set two parameters in the `wakka.config.php` file :
-
-- `webhooks_activitypub_default_actor`: The URL you associate with this parameter will be used as an actor for **all** ActivityPub activities.
-
-- `webhooks_activitypub_actors_base_url`: The base URL to use for all actors. For example if you use `https://activitypub.server/actor/`, then the URI of user WikiAdmin will be `https://activitypub.server/actor/WikiAdmin` instead of `http://localhost/?WikiAdmin`.
-
-
-## Test incoming webhook
-
-If you wish to see the data returned by the webhook, you can use the URL of the test incoming webhook: `http://YOUR_URL/?BazaR&vue=test-webhook`. All data POSTed to this URL will be inserted into the `yeswiki_triples` table.
+Comme énoncé dans le fichier de licence, il n'y a pas de garantie sur l'usage de ce logiciel. Se référer au fichier de licence pour les détails.
+Les développeurs de cette extension ne peuvent être responsables des conséquences qui découlent de l'usage de cette extension.
